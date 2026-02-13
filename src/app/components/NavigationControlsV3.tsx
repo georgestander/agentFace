@@ -125,12 +125,14 @@ function ScrollTrigger({
     return () => clearTimeout(timer);
   }, []);
 
+  const touchStartY = useRef<number | null>(null);
+
   useEffect(() => {
     if (fallback || completed.current) return;
 
-    const handler = (e: WheelEvent) => {
+    const advance = (delta: number) => {
       accumulated.current = Math.min(
-        accumulated.current + Math.abs(e.deltaY),
+        accumulated.current + delta,
         SCROLL_THRESHOLD
       );
       const p = accumulated.current / SCROLL_THRESHOLD;
@@ -141,8 +143,35 @@ function ScrollTrigger({
       }
     };
 
-    window.addEventListener("wheel", handler, { passive: true });
-    return () => window.removeEventListener("wheel", handler);
+    const wheelHandler = (e: WheelEvent) => {
+      advance(Math.abs(e.deltaY));
+    };
+
+    const touchStartHandler = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    const touchMoveHandler = (e: TouchEvent) => {
+      if (touchStartY.current === null) return;
+      const delta = Math.abs(e.touches[0].clientY - touchStartY.current);
+      touchStartY.current = e.touches[0].clientY;
+      advance(delta);
+    };
+
+    const touchEndHandler = () => {
+      touchStartY.current = null;
+    };
+
+    window.addEventListener("wheel", wheelHandler, { passive: true });
+    window.addEventListener("touchstart", touchStartHandler, { passive: true });
+    window.addEventListener("touchmove", touchMoveHandler, { passive: true });
+    window.addEventListener("touchend", touchEndHandler, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", wheelHandler);
+      window.removeEventListener("touchstart", touchStartHandler);
+      window.removeEventListener("touchmove", touchMoveHandler);
+      window.removeEventListener("touchend", touchEndHandler);
+    };
   }, [fallback, onComplete]);
 
   if (fallback) {
@@ -172,7 +201,8 @@ function ScrollTrigger({
       />
       <span className="relative z-10 flex items-center gap-1.5">
         <span className="text-xs opacity-60">{icon}</span>
-        <span>scroll {"\u2193"}</span>
+        <span className="hidden sm:inline">scroll {"\u2193"}</span>
+        <span className="sm:hidden">swipe {"\u2193"}</span>
       </span>
     </div>
   );
