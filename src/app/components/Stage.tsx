@@ -263,12 +263,6 @@ export default function Stage() {
         </div>
       )}
 
-      {/* Complete */}
-      {phase === "complete" && !isBrowsing && (
-        <div className="flex items-center justify-center h-full">
-          <p className="text-ink-muted font-mono text-sm">fin.</p>
-        </div>
-      )}
     </div>
   );
 }
