@@ -35,7 +35,7 @@ Page loads → Agent reads concept → Reasons visibly (SSE streamed text)
 
 ### Two API Routes
 
-- `POST /api/perform` — The performer endpoint. Sends concepts + tool definitions to OpenRouter with `tool_choice: "required"`. Streams back reasoning (content) + tool calls (function calling).
+- `POST /api/perform` — The performer endpoint. Sends concepts + tool definitions to OpenRouter with `tool_choice: "auto"`. Streams back reasoning (content) + tool calls (function calling).
 - `POST /api/chat` — Legacy chatbot endpoint (kept for backward compat during migration).
 
 ### Tool System
@@ -89,6 +89,7 @@ The Stage component reconstructs this from its history when requesting the next 
 - `"use client"` directive on browser components
 - Validate all model output with Zod before rendering
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`)
+- **Always make atomic commits** — one logical change per commit, never bundle unrelated changes
 
 ## Adding a New Tool
 
