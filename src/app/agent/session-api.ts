@@ -160,6 +160,7 @@ export async function sessionStepHandler({ request }: { request: Request }) {
           name: string;
           argumentsJson: string;
         }> = [];
+        let upstreamError = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -179,7 +180,7 @@ export async function sessionStepHandler({ request }: { request: Request }) {
             try {
               const json = JSON.parse(data);
               if (json.error) {
-                write("status", { phase: "error" });
+                upstreamError = true;
                 break;
               }
 
@@ -235,6 +236,7 @@ export async function sessionStepHandler({ request }: { request: Request }) {
               // Ignore parse errors on individual lines
             }
           }
+          if (upstreamError) break;
         }
 
         // Process remaining buffer
@@ -257,6 +259,14 @@ export async function sessionStepHandler({ request }: { request: Request }) {
               // Ignore
             }
           }
+        }
+
+        // Early exit if upstream reported an error
+        if (upstreamError) {
+          write("status", { phase: "error" });
+          write("done", { ok: false, error: "AI service returned an error" });
+          writer.close();
+          return;
         }
 
         // Emit the completed packet
