@@ -46,6 +46,8 @@ export async function performHandler({ request }: { request: Request }) {
   const systemPrompt = buildPerformancePrompt(conceptIndex, interaction);
   const tools = getOpenRouterTools();
 
+  console.log("[perform] Request: conceptIndex=", conceptIndex, "messages count=", messages.length, "model=", model);
+
   try {
     const openRouterResponse = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",

@@ -160,6 +160,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     setState((s) => {
       // If browsing history, return to current first
       if (s.browsingIndex !== null) {
+        console.log("[Context] advance: returning from browsing");
         return { ...s, browsingIndex: null };
       }
 
@@ -173,6 +174,8 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
 
       const nextIndex = s.currentConceptIndex + 1;
       const isComplete = nextIndex >= CONCEPTS.length;
+
+      console.log("[Context] advance:", s.currentConceptIndex, "→", nextIndex, "complete:", isComplete, "tool:", s.currentPresentation?.toolName, "toolCallId:", s.currentToolCallId);
 
       return {
         ...s,

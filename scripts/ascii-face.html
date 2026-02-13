@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ASCII Face Converter</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 24px;
+      }
+
+      .app {
+        width: min(1100px, 100%);
+        background: #111827;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .panel {
+        background: #1f2937;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 12px;
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+      }
+
+      input[type="range"] {
+        width: 100%;
+      }
+
+      input[type="text"] {
+        width: 100%;
+      }
+
+      select {
+        width: 100%;
+        background: #0b1220;
+        color: #f8fafc;
+        border: 1px solid #475569;
+        border-radius: 6px;
+        padding: 6px 8px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 430px;
+        background: #0b1220;
+        color: #f8fafc;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 10px;
+        resize: vertical;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 1px solid #475569;
+        background: #334155;
+        color: #f8fafc;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #475569;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dropzone {
+        border: 1px dashed #475569;
+        border-radius: 10px;
+        min-height: 180px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: #cbd5e1;
+        padding: 10px;
+      }
+
+      .small {
+        color: #cbd5e1;
+        font-size: 12px;
+      }
+
+      #preview {
+        width: 100%;
+        max-height: 320px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: #0b1220;
+      }
+
+      @media (max-width: 900px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="app">
+      <h1>ASCII Face Converter (No setup required)</h1>
+      <div class="small">
+        Drop an image or use the file picker, then generate ASCII text. No venv, no Python install needed.
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <div class="dropzone" id="dropzone">
+            <div>
+              <strong>Drop an image here</strong>
+              <p class="small">or use the file picker below</p>
+              <input id="imageInput" type="file" accept="image/*" />
+            </div>
+          </div>
+
+          <img id="preview" alt="Selected image preview" />
+
+          <label>
+            Width (characters)
+            <input id="width" type="range" min="40" max="220" value="120" />
+          </label>
+
+          <div class="row">
+            <label style="flex: 1">
+              Character ramp (light → dark)
+              <input id="chars" type="text" value=" .:-=+*#%@" />
+            </label>
+            <label class="row">
+              <input id="invert" type="checkbox" />
+              invert
+            </label>
+          </div>
+
+          <label>
+            Vertical scale (font aspect correction)
+            <input id="scale" type="range" min="0.35" max="0.9" step="0.01" value="0.55" />
+          </label>
+
+          <label>
+            Contrast boost
+            <input id="contrast" type="range" min="-20" max="80" value="28" />
+          </label>
+
+          <label>
+            Gamma (midtone shaping)
+            <input id="gamma" type="range" min="0.6" max="1.6" step="0.05" value="0.9" />
+          </label>
+
+          <label>
+            Edge emphasis
+            <input id="edge" type="range" min="0" max="0.8" step="0.05" value="0.25" />
+          </label>
+
+          <label>
+            Zoom (center crop)
+            <input id="zoom" type="range" min="1" max="2" step="0.05" value="1.2" />
+          </label>
+
+          <label>
+            Local contrast (adaptive)
+            <input id="localContrast" type="range" min="0" max="2" step="0.05" value="0.9" />
+          </label>
+
+          <label>
+            Dithering
+            <select id="dither">
+              <option value="none">none</option>
+              <option value="ordered">ordered (Bayer)</option>
+              <option value="diffusion" selected>diffusion (Floyd-Steinberg)</option>
+            </select>
+          </label>
+
+          <label class="row">
+            <input id="autoRamp" type="checkbox" checked />
+            auto-sort ramp by glyph darkness
+          </label>
+
+          <div class="actions">
+            <button id="presetBtn">Portrait preset</button>
+            <button id="generateBtn">Generate ASCII</button>
+            <button id="copyBtn">Copy</button>
+            <button id="downloadBtn">Download txt</button>
+            <button id="clearBtn">Clear</button>
+          </div>
+
+          <div class="small" id="status"></div>
+        </div>
+
+        <textarea id="output" spellcheck="false" aria-label="ASCII art output"></textarea>
+      </div>
+    </section>
+
+    <canvas id="workCanvas" style="display: none;"></canvas>
+
+    <script>
+      const imageInput = document.getElementById("imageInput");
+      const dropzone = document.getElementById("dropzone");
+      const preview = document.getElementById("preview");
+      const widthInput = document.getElementById("width");
+      const charsInput = document.getElementById("chars");
+      const invertInput = document.getElementById("invert");
+      const scaleInput = document.getElementById("scale");
+      const contrastInput = document.getElementById("contrast");
+      const gammaInput = document.getElementById("gamma");
+      const edgeInput = document.getElementById("edge");
+      const zoomInput = document.getElementById("zoom");
+      const localContrastInput = document.getElementById("localContrast");
+      const ditherInput = document.getElementById("dither");
+      const autoRampInput = document.getElementById("autoRamp");
+      const presetBtn = document.getElementById("presetBtn");
+      const generateBtn = document.getElementById("generateBtn");
+      const copyBtn = document.getElementById("copyBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const output = document.getElementById("output");
+      const status = document.getElementById("status");
+      const canvas = document.getElementById("workCanvas");
+      const ctx = canvas.getContext("2d");
+      const glyphCanvas = document.createElement("canvas");
+      glyphCanvas.width = 32;
+      glyphCanvas.height = 32;
+      const glyphCtx = glyphCanvas.getContext("2d");
+
+      let currentImage = null;
+
+      function showStatus(message) {
+        status.textContent = message;
+      }
+
+      function clamp(n, min, max) {
+        return Math.min(max, Math.max(min, n));
+      }
+
+      function calibrateRamp(charsArr) {
+        if (!glyphCtx || charsArr.length < 2) return charsArr;
+
+        const measured = charsArr.map((ch, idx) => {
+          if (ch === " ") {
+            return { ch, idx, density: 0 };
+          }
+
+          glyphCtx.clearRect(0, 0, 32, 32);
+          glyphCtx.fillStyle = "#000";
+          glyphCtx.fillRect(0, 0, 32, 32);
+          glyphCtx.fillStyle = "#fff";
+          glyphCtx.font = "27px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace";
+          glyphCtx.textAlign = "center";
+          glyphCtx.textBaseline = "middle";
+          glyphCtx.fillText(ch, 16, 17);
+
+          const data = glyphCtx.getImageData(0, 0, 32, 32).data;
+          let ink = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            ink += data[i];
+          }
+          return { ch, idx, density: ink / (255 * 32 * 32) };
+        });
+
+        measured.sort((a, b) => {
+          if (a.density === b.density) return a.idx - b.idx;
+          return a.density - b.density;
+        });
+
+        return measured.map((entry) => entry.ch);
+      }
+
+      function blur3x3(values, width, height) {
+        const out = new Float32Array(values.length);
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            let total = 0;
+            let count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              const yy = y + dy;
+              if (yy < 0 || yy >= height) continue;
+              for (let dx = -1; dx <= 1; dx++) {
+                const xx = x + dx;
+                if (xx < 0 || xx >= width) continue;
+                total += values[yy * width + xx];
+                count += 1;
+              }
+            }
+            out[y * width + x] = total / count;
+          }
+        }
+        return out;
+      }
+
+      function blurPasses(values, width, height, passes) {
+        let out = values;
+        for (let i = 0; i < passes; i++) {
+          out = blur3x3(out, width, height);
+        }
+        return out;
+      }
+
+      function sobelEdges(values, width, height) {
+        const out = new Float32Array(values.length);
+        let maxEdge = 0;
+
+        for (let y = 1; y < height - 1; y++) {
+          for (let x = 1; x < width - 1; x++) {
+            const idx = y * width + x;
+            const tl = values[(y - 1) * width + (x - 1)];
+            const tc = values[(y - 1) * width + x];
+            const tr = values[(y - 1) * width + (x + 1)];
+            const ml = values[y * width + (x - 1)];
+            const mr = values[y * width + (x + 1)];
+            const bl = values[(y + 1) * width + (x - 1)];
+            const bc = values[(y + 1) * width + x];
+            const br = values[(y + 1) * width + (x + 1)];
+
+            const gx = -tl + tr - 2 * ml + 2 * mr - bl + br;
+            const gy = -tl - 2 * tc - tr + bl + 2 * bc + br;
+            const edge = Math.sqrt(gx * gx + gy * gy);
+            out[idx] = edge;
+            if (edge > maxEdge) maxEdge = edge;
+          }
+        }
+
+        if (maxEdge > 0) {
+          for (let i = 0; i < out.length; i++) {
+            out[i] = out[i] / maxEdge;
+          }
+        }
+        return out;
+      }
+
+      function mapWithDither(darkness, width, height, ordered, mode) {
+        const levels = ordered.length - 1;
+        if (levels <= 0) {
+          const fillLine = (ordered[0] || "#").repeat(width);
+          return new Array(height).fill(fillLine).join("\n");
+        }
+
+        const lines = new Array(height);
+        if (mode === "diffusion") {
+          const work = Float32Array.from(darkness);
+          const spread = (x, y, amount) => {
+            if (x < 0 || x >= width || y < 0 || y >= height) return;
+            const idx = y * width + x;
+            work[idx] += amount;
+          };
+
+          for (let y = 0; y < height; y++) {
+            const lineChars = new Array(width);
+            const leftToRight = y % 2 === 0;
+            const xStart = leftToRight ? 0 : width - 1;
+            const xEnd = leftToRight ? width : -1;
+            const xStep = leftToRight ? 1 : -1;
+
+            for (let x = xStart; x !== xEnd; x += xStep) {
+              const idx = y * width + x;
+              const oldValue = clamp(work[idx], 0, 1);
+              const quantized = Math.round(oldValue * levels) / levels;
+              const charIndex = clamp(Math.round(quantized * levels), 0, levels);
+              lineChars[x] = ordered[charIndex];
+              const error = oldValue - quantized;
+
+              if (leftToRight) {
+                spread(x + 1, y, error * 7 / 16);
+                spread(x - 1, y + 1, error * 3 / 16);
+                spread(x, y + 1, error * 5 / 16);
+                spread(x + 1, y + 1, error * 1 / 16);
+              } else {
+                spread(x - 1, y, error * 7 / 16);
+                spread(x + 1, y + 1, error * 3 / 16);
+                spread(x, y + 1, error * 5 / 16);
+                spread(x - 1, y + 1, error * 1 / 16);
+              }
+            }
+            lines[y] = lineChars.join("");
+          }
+          return lines.join("\n");
+        }
+
+        const bayer4 = [
+          [0, 8, 2, 10],
+          [12, 4, 14, 6],
+          [3, 11, 1, 9],
+          [15, 7, 13, 5]
+        ];
+
+        for (let y = 0; y < height; y++) {
+          let line = "";
+          for (let x = 0; x < width; x++) {
+            let value = darkness[y * width + x];
+            if (mode === "ordered") {
+              const threshold = (bayer4[y % 4][x % 4] + 0.5) / 16 - 0.5;
+              value = clamp(value + threshold * (1 / Math.max(4, levels)), 0, 1);
+            }
+            const charIndex = clamp(Math.round(value * levels), 0, levels);
+            line += ordered[charIndex];
+          }
+          lines[y] = line;
+        }
+        return lines.join("\n");
+      }
+
+      function toAscii(
+        raster,
+        width,
+        height,
+        chars,
+        invert,
+        contrast,
+        gamma,
+        edgeStrength,
+        localContrast,
+        ditherMode,
+        autoRamp
+      ) {
+        const charsArr = Array.from(chars && chars.length > 0 ? chars : " .:-=+*#%@");
+        const sortedRamp = autoRamp ? calibrateRamp(charsArr) : charsArr;
+        const ordered = invert ? sortedRamp.slice().reverse() : sortedRamp;
+        const data = raster;
+        const luminances = new Float32Array(width * height);
+
+        for (let y = 0; y < height; y++) {
+          const rowStart = y * width * 4;
+          for (let x = 0; x < width; x++) {
+            const i = rowStart + x * 4;
+            const alpha = data[i + 3] / 255;
+            const r = data[i] * alpha + 255 * (1 - alpha);
+            const g = data[i + 1] * alpha + 255 * (1 - alpha);
+            const b = data[i + 2] * alpha + 255 * (1 - alpha);
+            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+            const idx = y * width + x;
+            luminances[idx] = luminance;
+          }
+        }
+
+        const blurred = blurPasses(luminances, width, height, 1);
+        const localMean = blurPasses(blurred, width, height, 4);
+        const edges = sobelEdges(blurred, width, height);
+        const enhanced = new Float32Array(width * height);
+
+        for (let i = 0; i < enhanced.length; i++) {
+          enhanced[i] = clamp(blurred[i] + localContrast * (blurred[i] - localMean[i]), 0, 255);
+        }
+
+        const sorted = Array.from(enhanced).sort((a, b) => a - b);
+        const low = sorted[Math.floor(sorted.length * 0.02)];
+        const high = sorted[Math.floor(sorted.length * 0.98)];
+        const dynamicRange = Math.max(1, high - low);
+        const contrastFactor = contrast / 100;
+        const darknessMap = new Float32Array(width * height);
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            const lum = enhanced[idx];
+            let brightness = (lum - low) / dynamicRange;
+            brightness = clamp(brightness, 0, 1);
+            brightness = clamp((brightness - 0.5) * (1 + contrastFactor) + 0.5, 0, 1);
+            brightness = Math.pow(brightness, gamma);
+            darknessMap[idx] = clamp(1 - brightness + edges[idx] * edgeStrength, 0, 1);
+          }
+        }
+
+        return mapWithDither(darknessMap, width, height, ordered, ditherMode);
+      }
+
+      function processImage(img) {
+        const width = Number(widthInput.value);
+        const chars = charsInput.value.length > 0 ? charsInput.value : " .:-=+*#%@";
+        const invert = invertInput.checked;
+        const scale = parseFloat(scaleInput.value || "0.55");
+        const contrast = parseFloat(contrastInput.value || "28");
+        const gamma = parseFloat(gammaInput.value || "0.9");
+        const edgeStrength = parseFloat(edgeInput.value || "0.25");
+        const zoom = parseFloat(zoomInput.value || "1.2");
+        const localContrast = parseFloat(localContrastInput.value || "0.9");
+        const ditherMode = ditherInput.value || "diffusion";
+        const autoRamp = autoRampInput.checked;
+
+        const srcW = img.naturalWidth / zoom;
+        const srcH = img.naturalHeight / zoom;
+        const srcX = (img.naturalWidth - srcW) / 2;
+        const srcY = (img.naturalHeight - srcH) / 2;
+
+        const targetW = width;
+        const aspect = srcH / srcW || (img.naturalHeight / img.naturalWidth) || (img.height / img.width);
+        const targetH = Math.max(1, Math.floor(aspect * targetW * scale));
+
+        canvas.width = targetW;
+        canvas.height = targetH;
+        ctx.imageSmoothingEnabled = true;
+        ctx.clearRect(0, 0, targetW, targetH);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, targetW, targetH);
+        ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH);
+        const raw = ctx.getImageData(0, 0, targetW, targetH).data;
+        return toAscii(
+          raw,
+          targetW,
+          targetH,
+          chars,
+          invert,
+          contrast,
+          gamma,
+          edgeStrength,
+          localContrast,
+          ditherMode,
+          autoRamp
+        );
+      }
+
+      async function loadImage(file) {
+        if (!file || !file.type.startsWith("image/")) {
+          showStatus("Please choose an image file.");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            preview.src = img.src;
+            currentImage = img;
+            showStatus(`Loaded: ${file.name}`);
+          };
+          img.src = String(reader.result);
+        };
+        reader.onerror = () => {
+          showStatus("Failed to read file.");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      imageInput.addEventListener("change", (evt) => {
+        const file = evt.target.files?.[0];
+        if (file) loadImage(file);
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      });
+
+      dropzone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const file = event.dataTransfer?.files?.[0];
+        if (file) loadImage(file);
+      });
+
+      presetBtn.addEventListener("click", () => {
+        widthInput.value = "170";
+        scaleInput.value = "0.55";
+        contrastInput.value = "28";
+        gammaInput.value = "0.88";
+        edgeInput.value = "0.2";
+        zoomInput.value = "1.25";
+        localContrastInput.value = "0.9";
+        ditherInput.value = "diffusion";
+        autoRampInput.checked = true;
+        charsInput.value = " .'`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+        invertInput.checked = false;
+        showStatus("Portrait preset applied. Click Generate ASCII.");
+      });
+
+      generateBtn.addEventListener("click", () => {
+        if (!currentImage) {
+          showStatus("Load an image first.");
+          return;
+        }
+        const ascii = processImage(currentImage);
+        output.value = ascii;
+        showStatus("ASCII generated.");
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(output.value);
+          showStatus("Copied to clipboard.");
+        } catch {
+          showStatus("Copy failed. Try selecting and copying manually.");
+        }
+      });
+
+      downloadBtn.addEventListener("click", () => {
+        const blob = new Blob([output.value], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "ascii-face.txt";
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showStatus("Downloaded ascii-face.txt");
+      });
+
+      clearBtn.addEventListener("click", () => {
+        output.value = "";
+        currentImage = null;
+        preview.removeAttribute("src");
+        imageInput.value = "";
+        showStatus("Cleared.");
+      });
+    </script>
+  </body>
+</html>

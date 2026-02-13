@@ -49,8 +49,12 @@ export default function Stage() {
    * Reads from refs to always get the latest state values.
    */
   const perform = useCallback(async () => {
-    if (isPerforming.current) return;
+    if (isPerforming.current) {
+      console.warn("[Stage] perform() skipped — already performing");
+      return;
+    }
     isPerforming.current = true;
+    console.log("[Stage] perform() starting for concept", conceptIndexRef.current, "history length:", historyRef.current.length);
     startReasoning();
 
     // AbortController for fetch timeout
@@ -88,13 +92,25 @@ export default function Stage() {
         });
       }
 
+      // After history, add a user message to prompt the next concept.
+      // Without this, the model sees the tool result and thinks it's done.
+      if (currentHistory.length > 0) {
+        messages.push({
+          role: "user",
+          content: "The visitor has seen your presentation and is ready for the next concept. Continue.",
+        });
+      }
+
+      const requestBody = {
+        messages,
+        conceptIndex: currentIndex,
+      };
+      console.log("[Stage] Sending request:", JSON.stringify(requestBody, null, 2));
+
       const response = await fetch("/api/perform", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages,
-          conceptIndex: currentIndex,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
@@ -107,12 +123,17 @@ export default function Stage() {
       const decoder = new TextDecoder();
       let state: StreamState = createStreamState();
       let buffer = "";
+      let chunkCount = 0;
+      let rawData = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        chunkCount++;
+        rawData += chunk;
+        buffer += chunk;
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
@@ -129,12 +150,17 @@ export default function Stage() {
       if (buffer.trim()) {
         state = processSSELine(buffer, state);
       }
+      console.log("[Stage] Stream complete. Chunks:", chunkCount, "Raw data length:", rawData.length);
+      console.log("[Stage] Raw SSE data (first 3000 chars):", rawData.slice(0, 3000));
 
       // Stream done — validate tool call and transition to reasoning-done
       // (the visitor clicks "show me" to proceed to presenting)
+      console.log("[Stage] Stream done. Tool calls:", state.toolCalls.length, "Reasoning length:", state.reasoning.length);
       if (state.toolCalls.length > 0) {
+        console.log("[Stage] Tool call:", state.toolCalls[0].name, "id:", state.toolCalls[0].id, "args length:", state.toolCalls[0].argumentsJson.length);
         const result = validateToolCall(state.toolCalls[0]);
         if (result.valid) {
+          console.log("[Stage] Tool validated successfully:", result.name);
           present(result.name, result.props, state.toolCalls[0].id);
         } else {
           console.error("[Stage] Tool validation failed:", result.error);
@@ -142,7 +168,7 @@ export default function Stage() {
         }
       } else {
         // No tool call received — the agent didn't call a tool
-        console.error("[Stage] No tool call in response");
+        console.error("[Stage] No tool call in response. Reasoning:", state.reasoning.slice(0, 200));
         setError("The agent forgot to present. Let's try again.");
       }
     } catch (err) {
@@ -160,7 +186,9 @@ export default function Stage() {
 
   // Auto-trigger performance when phase becomes idle (and we have concepts left)
   useEffect(() => {
+    console.log("[Stage] useEffect: phase=", phase, "conceptIndex=", currentConceptIndex, "total=", totalConcepts);
     if (phase === "idle" && currentConceptIndex < totalConcepts) {
+      console.log("[Stage] Auto-triggering perform()");
       perform();
     }
   }, [phase, currentConceptIndex, totalConcepts, perform]);
