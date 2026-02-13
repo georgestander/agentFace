@@ -8,26 +8,36 @@ interface Props {
   onReady?: () => void;
 }
 
-const kindStyles: Record<string, string> = {
-  text: "text-lg md:text-xl text-ink leading-relaxed",
-  label: "text-xs font-mono text-ink-muted uppercase tracking-widest",
-  highlight: "text-lg md:text-xl text-ink font-medium bg-accent-faint px-2 py-1 rounded inline",
+const kindStyles: Record<string, { card: string; text: string }> = {
+  text: {
+    card: "border-l-2 border-stone-300",
+    text: "text-base md:text-lg text-ink leading-relaxed",
+  },
+  label: {
+    card: "border-l-2 border-ink-faint",
+    text: "text-xs font-mono text-ink-muted uppercase tracking-[0.15em]",
+  },
+  highlight: {
+    card: "border-l-2 border-ink",
+    text: "text-base md:text-lg text-ink font-medium leading-relaxed",
+  },
 };
 
 export default function RevealSequence({ props, onReady }: Props) {
   const { layers, title } = props as RevealSequenceProps;
-  const [revealedCount, setRevealedCount] = useState(1);
+  const [revealedCount, setRevealedCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 50);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => {
+      setMounted(true);
+      setRevealedCount(1);
+    }, 200);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
-    if (revealedCount >= layers.length) {
-      onReady?.();
-    }
+    if (revealedCount >= layers.length) onReady?.();
   }, [revealedCount, layers.length, onReady]);
 
   const revealNext = () => {
@@ -39,45 +49,79 @@ export default function RevealSequence({ props, onReady }: Props) {
   const allRevealed = revealedCount >= layers.length;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full px-8">
-      <div className="max-w-xl w-full space-y-6">
+    <div className="flex items-center justify-center h-full px-6 sm:px-12 overflow-y-auto">
+      <div className="max-w-xl w-full py-16">
         {/* Title */}
         {title && (
-          <h2
-            className={`text-sm font-mono text-ink-faint uppercase tracking-widest mb-8 transition-all duration-500 ${
-              mounted ? "opacity-100" : "opacity-0"
+          <div
+            className={`mb-10 transition-all duration-500 ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
             }`}
           >
-            {title}
-          </h2>
+            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-ink-faint">
+              layers
+            </span>
+            <h2 className="text-sm font-mono text-ink-muted mt-1">
+              {title}
+            </h2>
+          </div>
         )}
 
-        {/* Layers */}
-        {layers.map((layer, i) => {
-          const isRevealed = i < revealedCount;
-          return (
-            <div
-              key={i}
-              className={`transition-all duration-500 ease-out ${
-                isRevealed
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4 h-0 overflow-hidden"
-              }`}
-              style={{ transitionDelay: isRevealed ? "100ms" : "0ms" }}
-            >
-              <p className={kindStyles[layer.kind || "text"]}>{layer.content}</p>
-            </div>
-          );
-        })}
+        {/* Layer cards */}
+        <div className="space-y-4">
+          {layers.map((layer, i) => {
+            const isRevealed = i < revealedCount;
+            const styles = kindStyles[layer.kind || "text"];
 
-        {/* Reveal prompt */}
-        {!allRevealed && (
+            return (
+              <div
+                key={i}
+                className={`transition-all duration-500 ease-out ${
+                  isRevealed
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-6 pointer-events-none h-0 overflow-hidden"
+                }`}
+                style={{ transitionDelay: isRevealed ? `${Math.min(i * 80, 300)}ms` : "0ms" }}
+              >
+                <div
+                  className={`pl-5 py-3 rounded-r-sm bg-surface-raised/60 ${styles.card}`}
+                  style={{
+                    boxShadow: isRevealed ? "0 1px 4px rgba(0,0,0,0.04)" : "none",
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="font-mono text-[10px] text-ink-faint/50 mt-1 select-none shrink-0">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <p className={styles.text}>{layer.content}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Reveal button */}
+        {!allRevealed && revealedCount > 0 && (
           <button
             onClick={revealNext}
-            className="mt-4 text-sm font-mono text-ink-faint hover:text-ink transition-colors duration-200 cursor-pointer"
+            className="mt-6 flex items-center gap-3 group cursor-pointer"
           >
-            reveal more ({revealedCount}/{layers.length})
+            <span className="w-8 h-[1px] bg-stone-300 group-hover:bg-ink-faint transition-colors" />
+            <span className="text-sm font-mono text-ink-faint group-hover:text-ink-muted transition-colors">
+              peel back layer {revealedCount + 1}
+            </span>
           </button>
+        )}
+
+        {/* All revealed indicator */}
+        {allRevealed && (
+          <div className="mt-8 flex items-center gap-3">
+            <span className="w-8 h-[1px] bg-stone-300" />
+            <span className="font-mono text-[10px] text-ink-faint/60 tracking-widest uppercase">
+              all layers revealed
+            </span>
+          </div>
         )}
       </div>
     </div>

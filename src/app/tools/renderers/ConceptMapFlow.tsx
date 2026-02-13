@@ -92,8 +92,8 @@ async function layoutWithElk(
       target: e.to,
       label: e.label || undefined,
       markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12 },
-      style: { stroke: "#d6d3d1", strokeWidth: 1 },
-      labelStyle: { fontSize: 10, fill: "#a8a29e" },
+      style: { stroke: "#78716c", strokeWidth: 1.5 },
+      labelStyle: { fontSize: 10, fill: "#78716c" },
     }));
 
   return { nodes, edges };
@@ -145,8 +145,8 @@ function circleLayout(
       target: e.to,
       label: e.label || undefined,
       markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12 },
-      style: { stroke: "#d6d3d1", strokeWidth: 1 },
-      labelStyle: { fontSize: 10, fill: "#a8a29e" },
+      style: { stroke: "#78716c", strokeWidth: 1.5 },
+      labelStyle: { fontSize: 10, fill: "#78716c" },
     }));
 
   return { nodes, edges };
@@ -161,17 +161,28 @@ function ConceptNode({ data }: { data: { label: string; description?: string; is
 
   return (
     <div
-      className={`px-4 py-2.5 rounded-lg border transition-all duration-200 max-w-[160px] ${
+      className={`px-5 py-3 rounded transition-all duration-200 max-w-[180px] ${
         data.isCenter
-          ? "bg-accent-faint border-accent-light text-ink font-medium text-sm"
-          : "bg-surface-raised border-stone-200 text-ink-muted text-xs hover:border-accent/40"
+          ? "text-white text-sm font-medium"
+          : "text-ink text-xs border border-stone-300 hover:border-stone-400"
       }`}
+      style={
+        data.isCenter
+          ? { background: "linear-gradient(135deg, #1a1a1a, #333)" }
+          : { background: "#fafaf9" }
+      }
       onMouseEnter={() => data.description && setShowDesc(true)}
       onMouseLeave={() => setShowDesc(false)}
     >
       <div className="text-center leading-snug">{data.label}</div>
       {showDesc && data.description && (
-        <div className="mt-1.5 pt-1.5 border-t border-stone-100 text-[10px] text-ink-faint leading-snug">
+        <div
+          className={`mt-2 pt-2 text-[10px] leading-snug ${
+            data.isCenter
+              ? "border-t border-white/20 text-stone-300"
+              : "border-t border-stone-200 text-ink-faint"
+          }`}
+        >
           {data.description}
         </div>
       )}
