@@ -12,7 +12,8 @@ import { useShowSession } from "../runtime/useShowSession";
 import { useStepPrefetch } from "../runtime/useStepPrefetch";
 import { useTokenLedger } from "../runtime/useTokenLedger";
 import { buildSeed, deriveBackground } from "../runtime/seed";
-import { PROMPT_VERSION } from "../runtime/types";
+import { PROMPT_VERSION, type TokenUsage } from "../runtime/types";
+import { getSnapshot } from "../runtime/thread-store";
 import { CONCEPTS } from "../agent/concepts";
 import StageV3 from "../components/StageV3";
 import ConceptBoxV3 from "../components/ConceptBoxV3";
@@ -44,6 +45,25 @@ function HomeV3Active() {
       session.startSession();
     }
   }, [session.phase, session.startSession]);
+
+  // Hydrate token ledger from restored session (e.g. after refresh)
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current || session.phase === "init" || !session.sessionId) return;
+    const snapshot = getSnapshot();
+    if (!snapshot) return;
+
+    const byStep: Record<number, TokenUsage> = {};
+    for (const [key, packet] of Object.entries(snapshot.packetsByStep)) {
+      if (packet.tokenUsage) {
+        byStep[Number(key)] = packet.tokenUsage;
+      }
+    }
+    if (Object.keys(byStep).length > 0 && snapshot.totals.totalTokens > 0) {
+      tokenLedger.hydrate(byStep, snapshot.totals);
+    }
+    hydratedRef.current = true;
+  }, [session.phase, session.sessionId]);
 
   // Prefetch upcoming steps after a packet arrives
   const prefetchEnabled =
