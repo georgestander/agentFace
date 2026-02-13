@@ -3,6 +3,12 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { CONCEPTS } from "../agent/concepts";
 
+const DEBUG_PERFORMANCE = import.meta.env.DEV;
+
+function debugLog(...args: unknown[]) {
+  if (DEBUG_PERFORMANCE) console.log(...args);
+}
+
 export type PerformancePhase =
   | "intro"
   | "idle"
@@ -160,7 +166,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     setState((s) => {
       // If browsing history, return to current first
       if (s.browsingIndex !== null) {
-        console.log("[Context] advance: returning from browsing");
+        debugLog("[Context] advance: returning from browsing");
         return { ...s, browsingIndex: null };
       }
 
@@ -175,7 +181,18 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
       const nextIndex = s.currentConceptIndex + 1;
       const isComplete = nextIndex >= CONCEPTS.length;
 
-      console.log("[Context] advance:", s.currentConceptIndex, "→", nextIndex, "complete:", isComplete, "tool:", s.currentPresentation?.toolName, "toolCallId:", s.currentToolCallId);
+      debugLog(
+        "[Context] advance:",
+        s.currentConceptIndex,
+        "→",
+        nextIndex,
+        "complete:",
+        isComplete,
+        "tool:",
+        s.currentPresentation?.toolName,
+        "toolCallId:",
+        s.currentToolCallId
+      );
 
       return {
         ...s,

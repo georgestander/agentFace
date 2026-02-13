@@ -13,10 +13,12 @@ export interface StreamState {
   toolCalls: StreamedToolCall[];
   /** Whether the stream is done */
   done: boolean;
+  /** Stream-level provider/OpenRouter error, if emitted */
+  streamError: string | null;
 }
 
 export function createStreamState(): StreamState {
-  return { reasoning: "", toolCalls: [], done: false };
+  return { reasoning: "", toolCalls: [], done: false, streamError: null };
 }
 
 /**
@@ -36,15 +38,31 @@ export function processSSELine(
 
   try {
     const json = JSON.parse(data);
+    if (json.error) {
+      const streamError =
+        typeof json.error?.message === "string"
+          ? json.error.message
+          : "Upstream model error";
+      return { ...current, streamError };
+    }
+
     const delta = json.choices?.[0]?.delta;
     if (!delta) return current;
 
     let reasoning = current.reasoning;
     const toolCalls = [...current.toolCalls];
 
-    // Accumulate content (reasoning text)
-    if (delta.content) {
+    // Accumulate reasoning text. Different models stream this in different fields.
+    if (typeof delta.reasoning === "string" && delta.reasoning) {
+      reasoning += delta.reasoning;
+    } else if (typeof delta.content === "string" && delta.content) {
       reasoning += delta.content;
+    } else if (Array.isArray(delta.reasoning_details)) {
+      for (const detail of delta.reasoning_details) {
+        if (typeof detail?.text === "string" && detail.text) {
+          reasoning += detail.text;
+        }
+      }
     }
 
     // Accumulate tool calls
@@ -66,7 +84,7 @@ export function processSSELine(
       }
     }
 
-    return { reasoning, toolCalls, done: false };
+    return { reasoning, toolCalls, done: false, streamError: current.streamError };
   } catch {
     return current;
   }

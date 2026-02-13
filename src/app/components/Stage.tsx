@@ -16,6 +16,15 @@ import NavigationControls from "./NavigationControls";
 const PRESENTING_TIMEOUT_MS = 15_000;
 /** Timeout for the fetch request to /api/perform */
 const FETCH_TIMEOUT_MS = 30_000;
+const DEBUG_STREAM = import.meta.env.DEV;
+
+function debugLog(...args: unknown[]) {
+  if (DEBUG_STREAM) console.log(...args);
+}
+
+function debugWarn(...args: unknown[]) {
+  if (DEBUG_STREAM) console.warn(...args);
+}
 
 export default function Stage() {
   const {
@@ -50,11 +59,16 @@ export default function Stage() {
    */
   const perform = useCallback(async () => {
     if (isPerforming.current) {
-      console.warn("[Stage] perform() skipped — already performing");
+      debugWarn("[Stage] perform() skipped — already performing");
       return;
     }
     isPerforming.current = true;
-    console.log("[Stage] perform() starting for concept", conceptIndexRef.current, "history length:", historyRef.current.length);
+    debugLog(
+      "[Stage] perform() starting for concept",
+      conceptIndexRef.current,
+      "history length:",
+      historyRef.current.length
+    );
     startReasoning();
 
     // AbortController for fetch timeout
@@ -92,20 +106,21 @@ export default function Stage() {
         });
       }
 
-      // After history, add a user message to prompt the next concept.
-      // Without this, the model sees the tool result and thinks it's done.
-      if (currentHistory.length > 0) {
-        messages.push({
-          role: "user",
-          content: "The visitor has seen your presentation and is ready for the next concept. Continue.",
-        });
-      }
+      // Always include a user turn so providers that reject empty chat content
+      // can process the request consistently.
+      messages.push({
+        role: "user",
+        content:
+          currentHistory.length > 0
+            ? "The visitor has seen your presentation and is ready for the next concept. Continue."
+            : "The visitor is ready. Present the first concept now.",
+      });
 
       const requestBody = {
         messages,
         conceptIndex: currentIndex,
       };
-      console.log("[Stage] Sending request:", JSON.stringify(requestBody, null, 2));
+      debugLog("[Stage] Sending request:", JSON.stringify(requestBody, null, 2));
 
       const response = await fetch("/api/perform", {
         method: "POST",
@@ -115,7 +130,8 @@ export default function Stage() {
       });
 
       if (!response.ok || !response.body) {
-        throw new Error(`API error: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} ${errorText}`);
       }
 
       // Read the SSE stream
@@ -139,6 +155,9 @@ export default function Stage() {
 
         for (const line of lines) {
           state = processSSELine(line, state);
+          if (state.streamError) {
+            throw new Error(`OPENROUTER_STREAM_ERROR: ${state.streamError}`);
+          }
           // Update reasoning text in real-time
           if (state.reasoning) {
             updateReasoning(state.reasoning);
@@ -149,18 +168,33 @@ export default function Stage() {
       // Process any remaining buffer
       if (buffer.trim()) {
         state = processSSELine(buffer, state);
+        if (state.streamError) {
+          throw new Error(`OPENROUTER_STREAM_ERROR: ${state.streamError}`);
+        }
       }
-      console.log("[Stage] Stream complete. Chunks:", chunkCount, "Raw data length:", rawData.length);
-      console.log("[Stage] Raw SSE data (first 3000 chars):", rawData.slice(0, 3000));
+      debugLog("[Stage] Stream complete. Chunks:", chunkCount, "Raw data length:", rawData.length);
+      debugLog("[Stage] Raw SSE data (first 3000 chars):", rawData.slice(0, 3000));
 
       // Stream done — validate tool call and transition to reasoning-done
       // (the visitor clicks "show me" to proceed to presenting)
-      console.log("[Stage] Stream done. Tool calls:", state.toolCalls.length, "Reasoning length:", state.reasoning.length);
+      debugLog(
+        "[Stage] Stream done. Tool calls:",
+        state.toolCalls.length,
+        "Reasoning length:",
+        state.reasoning.length
+      );
       if (state.toolCalls.length > 0) {
-        console.log("[Stage] Tool call:", state.toolCalls[0].name, "id:", state.toolCalls[0].id, "args length:", state.toolCalls[0].argumentsJson.length);
+        debugLog(
+          "[Stage] Tool call:",
+          state.toolCalls[0].name,
+          "id:",
+          state.toolCalls[0].id,
+          "args length:",
+          state.toolCalls[0].argumentsJson.length
+        );
         const result = validateToolCall(state.toolCalls[0]);
         if (result.valid) {
-          console.log("[Stage] Tool validated successfully:", result.name);
+          debugLog("[Stage] Tool validated successfully:", result.name);
           present(result.name, result.props, state.toolCalls[0].id);
         } else {
           console.error("[Stage] Tool validation failed:", result.error);
@@ -169,12 +203,16 @@ export default function Stage() {
       } else {
         // No tool call received — the agent didn't call a tool
         console.error("[Stage] No tool call in response. Reasoning:", state.reasoning.slice(0, 200));
-        setError("The agent forgot to present. Let's try again.");
+        setError("The model responded without a presentation tool. Please try again.");
       }
     } catch (err) {
       console.error("[Stage] Performance error:", err);
       if (err instanceof DOMException && err.name === "AbortError") {
         setError("The agent took too long to respond. Let's try again.");
+      } else if (err instanceof Error && err.message.startsWith("OPENROUTER_STREAM_ERROR: ")) {
+        setError(err.message.replace("OPENROUTER_STREAM_ERROR: ", ""));
+      } else if (err instanceof Error && err.message.startsWith("API error: ")) {
+        setError("The AI service returned an error. Check model/tool compatibility and retry.");
       } else {
         setError("Something went wrong. The agent stumbled.");
       }
@@ -186,9 +224,16 @@ export default function Stage() {
 
   // Auto-trigger performance when phase becomes idle (and we have concepts left)
   useEffect(() => {
-    console.log("[Stage] useEffect: phase=", phase, "conceptIndex=", currentConceptIndex, "total=", totalConcepts);
+    debugLog(
+      "[Stage] useEffect: phase=",
+      phase,
+      "conceptIndex=",
+      currentConceptIndex,
+      "total=",
+      totalConcepts
+    );
     if (phase === "idle" && currentConceptIndex < totalConcepts) {
-      console.log("[Stage] Auto-triggering perform()");
+      debugLog("[Stage] Auto-triggering perform()");
       perform();
     }
   }, [phase, currentConceptIndex, totalConcepts, perform]);
@@ -197,7 +242,7 @@ export default function Stage() {
   useEffect(() => {
     if (phase === "presenting") {
       const timer = setTimeout(() => {
-        console.warn("[Stage] Presenting safety timeout — auto-advancing");
+        debugWarn("[Stage] Presenting safety timeout — auto-advancing");
         finishPresentation();
       }, PRESENTING_TIMEOUT_MS);
       return () => clearTimeout(timer);
