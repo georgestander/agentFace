@@ -4,7 +4,8 @@
   "compatibility_date": "2025-08-21",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "AI_MODEL": "openai/gpt-5-nano"
+    "AI_MODEL": "openai/gpt-5.2-chat",
+    "EXPERIENCE_V3": "true"
   },
   "observability": {
     "enabled": true
