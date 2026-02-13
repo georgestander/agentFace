@@ -13,8 +13,8 @@ import ThoughtRail from "./ThoughtRail";
 import ToolRenderer from "./ToolRenderer";
 import NavigationControlsV3 from "./NavigationControlsV3";
 import { CONCEPTS } from "../agent/concepts";
-import { buildSeed, deriveThoughtStyle, type ThoughtStyle } from "../runtime/seed";
-import { PROMPT_VERSION } from "../runtime/types";
+import { buildSeed, deriveThoughtStyle, deriveIntent, type ThoughtStyle } from "../runtime/seed";
+import { PROMPT_VERSION, type IntentSpec } from "../runtime/types";
 
 function ThinkingDots() {
   return (
@@ -59,6 +59,19 @@ export default function StageV3({ session }: StageV3Props) {
       ? deriveThoughtStyle(buildSeed(session.sessionId, activeStepIndex - 1, prevConcept.id, PROMPT_VERSION, session.model))
       : undefined;
     return deriveThoughtStyle(seed, prevStyle);
+  }, [session.sessionId, session.model, activeStepIndex]);
+
+  // Derive intent for navigation controls
+  const intentSpec = useMemo<IntentSpec>(() => {
+    if (!session.sessionId || !session.model) {
+      return { label: "continue", interactionMode: "click", placement: "bottom-center", icon: "→" };
+    }
+    const concept = CONCEPTS[activeStepIndex];
+    if (!concept) {
+      return { label: "continue", interactionMode: "click", placement: "bottom-center", icon: "→" };
+    }
+    const seed = buildSeed(session.sessionId, activeStepIndex, concept.id, PROMPT_VERSION, session.model);
+    return deriveIntent(seed);
   }, [session.sessionId, session.model, activeStepIndex]);
 
   // Reasoning text
@@ -127,6 +140,7 @@ export default function StageV3({ session }: StageV3Props) {
         currentStep={session.currentStep}
         totalConcepts={session.totalConcepts}
         browsingIndex={session.browsingIndex}
+        intentSpec={intentSpec}
         onShowPresentation={session.showPresentation}
         onAdvance={session.advance}
         onGoBack={session.goBack}
