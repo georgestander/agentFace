@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef, useCallback } from "react";
-import { type StepPacket, type TokenUsage, PROMPT_VERSION } from "./types";
+import { type StepPacket, type TokenUsage, PROMPT_VERSION, UI_MOODS, type UiMood } from "./types";
 import { CONCEPTS } from "../agent/concepts";
 import { hasPacket, isInflight, storePacket, markInflight, clearInflight } from "./thread-store";
 import { acquireLock, releaseStepLock, broadcastPacketReady } from "./tab-sync";
@@ -142,17 +142,31 @@ export function useStepPrefetch(config: PrefetchConfig): void {
           return false;
         }
 
-        // Enrich with client-derived metadata
+        // Enrich with client-derived metadata (same merge logic as useShowSession)
         const concept = CONCEPTS[stepIndex];
         const seed = buildSeed(sessionId, stepIndex, concept.id, PROMPT_VERSION, model);
         const previousPacket = getThreadPacket(stepIndex - 1);
+        const seedMood = deriveMood(seed, previousPacket?.uiMood);
+        const seedIntent = deriveIntent(seed);
+
+        // Validate model-provided mood against known values
+        const modelMood = receivedPacket.uiMood;
+        const validMood = modelMood && (UI_MOODS as readonly string[]).includes(modelMood)
+          ? (modelMood as UiMood)
+          : seedMood;
+
+        // Merge model-provided intent label with seed-derived defaults
+        const modelIntent = receivedPacket.intentSpec;
+        const mergedIntent = modelIntent?.label
+          ? { ...seedIntent, label: modelIntent.label }
+          : seedIntent;
 
         const enrichedPacket: StepPacket = {
           ...receivedPacket,
           thoughtFull: reasoning,
           thoughtShort: reasoning.slice(0, 120),
-          uiMood: receivedPacket.uiMood || deriveMood(seed, previousPacket?.uiMood),
-          intentSpec: receivedPacket.intentSpec || deriveIntent(seed),
+          uiMood: validMood,
+          intentSpec: mergedIntent,
           tokenUsage: receivedUsage || receivedPacket.tokenUsage,
         };
 

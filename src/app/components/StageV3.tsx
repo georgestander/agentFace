@@ -61,8 +61,12 @@ export default function StageV3({ session }: StageV3Props) {
     return deriveThoughtStyle(seed, prevStyle);
   }, [session.sessionId, session.model, activeStepIndex]);
 
-  // Derive intent for navigation controls
+  // Derive intent for navigation controls.
+  // Prefer the packet's merged intentSpec (model label + seed defaults) when
+  // available; fall back to pure seed derivation during reasoning.
+  const packetIntent = session.currentPacket?.intentSpec ?? null;
   const intentSpec = useMemo<IntentSpec>(() => {
+    if (packetIntent) return packetIntent;
     if (!session.sessionId || !session.model) {
       return { label: "continue", interactionMode: "click", placement: "bottom-center", icon: "→" };
     }
@@ -72,7 +76,7 @@ export default function StageV3({ session }: StageV3Props) {
     }
     const seed = buildSeed(session.sessionId, activeStepIndex, concept.id, PROMPT_VERSION, session.model);
     return deriveIntent(seed);
-  }, [session.sessionId, session.model, activeStepIndex]);
+  }, [packetIntent, session.sessionId, session.model, activeStepIndex]);
 
   // Reasoning text
   const reasoningText = isBrowsing
