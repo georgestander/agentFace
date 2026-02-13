@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { usePerformance } from "../context/PerformanceContext";
-import { CONCEPTS } from "../agent/concepts";
 import {
   createStreamState,
   processSSELine,
@@ -12,23 +11,30 @@ import {
 import ReasoningTrace from "./ReasoningTrace";
 import ToolRenderer from "./ToolRenderer";
 
+/** Safety timeout for presenting phase — if onReady never fires */
+const PRESENTING_TIMEOUT_MS = 15_000;
+/** Timeout for the fetch request to /api/perform */
+const FETCH_TIMEOUT_MS = 30_000;
+
 export default function Stage() {
   const {
     phase,
     currentConceptIndex,
     reasoning,
     currentPresentation,
+    errorMessage,
     history,
     startReasoning,
     updateReasoning,
     present,
     finishPresentation,
     advance,
+    setError,
+    clearError,
     totalConcepts,
   } = usePerformance();
 
   const isPerforming = useRef(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Use refs for values that perform() needs so the callback
   // doesn't go stale across state transitions
@@ -44,8 +50,11 @@ export default function Stage() {
   const perform = useCallback(async () => {
     if (isPerforming.current) return;
     isPerforming.current = true;
-    setError(null);
     startReasoning();
+
+    // AbortController for fetch timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
       // Read latest values from refs
@@ -85,6 +94,7 @@ export default function Stage() {
           messages,
           conceptIndex: currentIndex,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -126,15 +136,25 @@ export default function Stage() {
           present(result.name, result.props, state.toolCalls[0].id);
         } else {
           console.error("[Stage] Tool validation failed:", result.error);
+          setError("The agent's response wasn't quite right. Let's try again.");
         }
+      } else {
+        // No tool call received — the agent didn't call a tool
+        console.error("[Stage] No tool call in response");
+        setError("The agent forgot to present. Let's try again.");
       }
     } catch (err) {
       console.error("[Stage] Performance error:", err);
-      setError("Something went wrong. The agent stumbled.");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("The agent took too long to respond. Let's try again.");
+      } else {
+        setError("Something went wrong. The agent stumbled.");
+      }
     } finally {
+      clearTimeout(timeoutId);
       isPerforming.current = false;
     }
-  }, [startReasoning, updateReasoning, present]);
+  }, [startReasoning, updateReasoning, present, setError]);
 
   // Auto-trigger performance when phase becomes idle (and we have concepts left)
   useEffect(() => {
@@ -143,7 +163,16 @@ export default function Stage() {
     }
   }, [phase, currentConceptIndex, totalConcepts, perform]);
 
-  const concept = CONCEPTS[currentConceptIndex];
+  // Safety timeout: if presenting phase stalls (onReady never fires), auto-advance
+  useEffect(() => {
+    if (phase === "presenting") {
+      const timer = setTimeout(() => {
+        console.warn("[Stage] Presenting safety timeout — auto-advancing");
+        finishPresentation();
+      }, PRESENTING_TIMEOUT_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, finishPresentation]);
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full relative">
@@ -186,11 +215,11 @@ export default function Stage() {
       )}
 
       {/* Error state */}
-      {error && (
+      {phase === "error" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-          <p className="text-ink-muted font-mono text-sm">{error}</p>
+          <p className="text-ink-muted font-mono text-sm">{errorMessage}</p>
           <button
-            onClick={() => { setError(null); perform(); }}
+            onClick={() => { clearError(); }}
             className="px-4 py-2 text-xs font-mono text-ink-muted hover:text-ink border border-stone-300 rounded-lg transition-colors cursor-pointer"
           >
             try again

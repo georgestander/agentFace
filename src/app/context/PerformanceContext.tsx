@@ -8,7 +8,8 @@ export type PerformancePhase =
   | "reasoning"
   | "presenting"
   | "awaiting"
-  | "complete";
+  | "complete"
+  | "error";
 
 export interface Presentation {
   toolName: string;
@@ -30,6 +31,7 @@ interface PerformanceState {
   currentPresentation: Presentation | null;
   currentToolCallId: string;
   history: HistoryEntry[];
+  errorMessage: string;
 }
 
 interface PerformanceContextValue extends PerformanceState {
@@ -38,6 +40,8 @@ interface PerformanceContextValue extends PerformanceState {
   present: (toolName: string, props: Record<string, unknown>, toolCallId: string) => void;
   finishPresentation: () => void;
   advance: () => void;
+  setError: (message: string) => void;
+  clearError: () => void;
   totalConcepts: number;
 }
 
@@ -57,6 +61,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     currentPresentation: null,
     currentToolCallId: "",
     history: [],
+    errorMessage: "",
   });
 
   const startReasoning = useCallback(() => {
@@ -84,6 +89,14 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
       ...s,
       phase: "awaiting",
     }));
+  }, []);
+
+  const setError = useCallback((message: string) => {
+    setState((s) => ({ ...s, phase: "error", errorMessage: message }));
+  }, []);
+
+  const clearError = useCallback(() => {
+    setState((s) => ({ ...s, phase: "idle", errorMessage: "" }));
   }, []);
 
   const advance = useCallback(() => {
@@ -120,6 +133,8 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
         present,
         finishPresentation,
         advance,
+        setError,
+        clearError,
         totalConcepts: CONCEPTS.length,
       }}
     >
