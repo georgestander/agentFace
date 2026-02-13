@@ -1,0 +1,12 @@
+{
+  "name": "agent-face",
+  "main": "./src/worker.tsx",
+  "compatibility_date": "2025-08-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "AI_MODEL": "anthropic/claude-sonnet-4"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
