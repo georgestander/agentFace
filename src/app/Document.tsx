@@ -8,7 +8,7 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
       <title>George Stander</title>
       <meta
         name="description"
-        content="Meet George's AI agent — a conversational portfolio that shows you who he is."
+        content="Watch an agent present how George thinks — one concept at a time."
       />
       <script src="https://cdn.tailwindcss.com"></script>
       <script
@@ -19,19 +19,25 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
                 extend: {
                   colors: {
                     surface: {
-                      DEFAULT: '#0a0a0a',
-                      raised: '#141414',
-                      overlay: '#1e1e1e',
+                      DEFAULT: '#fafaf9',
+                      raised: '#f5f5f4',
+                      overlay: '#e7e5e4',
+                    },
+                    ink: {
+                      DEFAULT: '#1c1917',
+                      muted: '#78716c',
+                      faint: '#a8a29e',
                     },
                     accent: {
-                      DEFAULT: '#c4b5fd',
-                      dim: '#7c3aed',
+                      DEFAULT: '#7c3aed',
+                      light: '#c4b5fd',
+                      faint: '#ede9fe',
                     },
-                    muted: '#a1a1aa',
                   },
                   fontFamily: {
                     sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
                     mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
                   },
                 },
               },
@@ -47,19 +53,16 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
         dangerouslySetInnerHTML={{
           __html: `
             body {
-              background-color: #0a0a0a;
-              color: #e4e4e7;
+              background-color: #fafaf9;
+              color: #1c1917;
               font-family: 'Inter', system-ui, -apple-system, sans-serif;
             }
 
             /* Scrollbar styling */
             ::-webkit-scrollbar { width: 6px; }
             ::-webkit-scrollbar-track { background: transparent; }
-            ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
-            ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-
-            /* Smooth animations */
-            * { transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+            ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+            ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
           `,
         }}
       />
