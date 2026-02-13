@@ -4,7 +4,7 @@
   "compatibility_date": "2025-08-21",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "AI_MODEL": "minimax/minimax-m2.5"
+    "AI_MODEL": "x-ai/grok-4.1-fast"
   },
   "observability": {
     "enabled": true
