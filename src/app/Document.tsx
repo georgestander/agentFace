@@ -73,6 +73,28 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
               }
             }
 
+            /* Ambient backdrop animations */
+            @keyframes ambient-drift {
+              0% { transform: translate(0, 0); }
+              50% { transform: translate(-2px, -2px); }
+              100% { transform: translate(0, 0); }
+            }
+            @keyframes ambient-scan {
+              0% { top: -2px; }
+              100% { top: 100%; }
+            }
+            @keyframes ambient-grid-drift {
+              0% { background-position: 0 0; }
+              100% { background-position: 40px 40px; }
+            }
+            @keyframes ambient-noise {
+              0% { transform: translate(0, 0); }
+              25% { transform: translate(-4px, 4px); }
+              50% { transform: translate(4px, -4px); }
+              75% { transform: translate(-4px, -4px); }
+              100% { transform: translate(0, 0); }
+            }
+
             /* Scrollbar styling */
             ::-webkit-scrollbar { width: 6px; }
             ::-webkit-scrollbar-track { background: transparent; }
