@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { TOOL_RENDERERS } from "../tools/renderers";
 
 interface ToolRendererProps {
@@ -20,5 +21,15 @@ export default function ToolRenderer({ name, props, onReady }: ToolRendererProps
     );
   }
 
-  return <Component props={props} onReady={onReady} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full text-ink-faint text-xs font-mono animate-pulse">
+          loading...
+        </div>
+      }
+    >
+      <Component props={props} onReady={onReady} />
+    </Suspense>
+  );
 }
