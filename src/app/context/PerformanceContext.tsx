@@ -18,7 +18,7 @@ export interface Presentation {
   props: Record<string, unknown>;
 }
 
-interface HistoryEntry {
+export interface HistoryEntry {
   conceptIndex: number;
   toolName: string;
   props: Record<string, unknown>;
@@ -34,6 +34,8 @@ interface PerformanceState {
   currentToolCallId: string;
   history: HistoryEntry[];
   errorMessage: string;
+  /** null = viewing current concept, number = viewing a history entry */
+  browsingIndex: number | null;
 }
 
 interface PerformanceContextValue extends PerformanceState {
@@ -46,6 +48,9 @@ interface PerformanceContextValue extends PerformanceState {
   setError: (message: string) => void;
   clearError: () => void;
   startPerformance: () => void;
+  goBack: () => void;
+  goForward: () => void;
+  browseTo: (index: number) => void;
   totalConcepts: number;
 }
 
@@ -66,10 +71,11 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     currentToolCallId: "",
     history: [],
     errorMessage: "",
+    browsingIndex: null,
   });
 
   const startReasoning = useCallback(() => {
-    setState((s) => ({ ...s, phase: "reasoning", reasoning: "" }));
+    setState((s) => ({ ...s, phase: "reasoning", reasoning: "", browsingIndex: null }));
   }, []);
 
   const updateReasoning = useCallback((text: string) => {
@@ -114,8 +120,49 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, phase: "idle" }));
   }, []);
 
+  const goBack = useCallback(() => {
+    setState((s) => {
+      if (s.history.length === 0) return s;
+
+      if (s.browsingIndex === null) {
+        // Currently viewing current concept — go to last history entry
+        return { ...s, browsingIndex: s.history.length - 1 };
+      } else if (s.browsingIndex > 0) {
+        // Move back in history
+        return { ...s, browsingIndex: s.browsingIndex - 1 };
+      }
+      return s;
+    });
+  }, []);
+
+  const goForward = useCallback(() => {
+    setState((s) => {
+      if (s.browsingIndex === null) return s;
+
+      if (s.browsingIndex < s.history.length - 1) {
+        // Move forward in history
+        return { ...s, browsingIndex: s.browsingIndex + 1 };
+      } else {
+        // At the end of history — return to current concept
+        return { ...s, browsingIndex: null };
+      }
+    });
+  }, []);
+
+  const browseTo = useCallback((index: number) => {
+    setState((s) => {
+      if (index < 0 || index >= s.history.length) return s;
+      return { ...s, browsingIndex: index };
+    });
+  }, []);
+
   const advance = useCallback(() => {
     setState((s) => {
+      // If browsing history, return to current first
+      if (s.browsingIndex !== null) {
+        return { ...s, browsingIndex: null };
+      }
+
       const entry: HistoryEntry = {
         conceptIndex: s.currentConceptIndex,
         toolName: s.currentPresentation?.toolName || "",
@@ -135,6 +182,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
         currentPresentation: null,
         currentToolCallId: "",
         history: [...s.history, entry],
+        browsingIndex: null,
       };
     });
   }, []);
@@ -152,6 +200,9 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
         setError,
         clearError,
         startPerformance,
+        goBack,
+        goForward,
+        browseTo,
         totalConcepts: CONCEPTS.length,
       }}
     >

@@ -25,6 +25,7 @@ export default function Stage() {
     currentPresentation,
     errorMessage,
     history,
+    browsingIndex,
     startReasoning,
     updateReasoning,
     present,
@@ -175,39 +176,73 @@ export default function Stage() {
     }
   }, [phase, finishPresentation]);
 
-  // Show reasoning during reasoning and reasoning-done phases
+  // Determine what to display based on browsing state
+  const isBrowsing = browsingIndex !== null;
+  const browsingEntry = isBrowsing ? history[browsingIndex] : null;
+
+  // Show reasoning during reasoning and reasoning-done phases (or browsing history)
   const showReasoning =
-    phase === "reasoning" ||
-    phase === "reasoning-done" ||
-    (phase === "presenting" && reasoning);
+    (!isBrowsing && (
+      phase === "reasoning" ||
+      phase === "reasoning-done" ||
+      (phase === "presenting" && reasoning)
+    )) ||
+    (isBrowsing && browsingEntry?.reasoning);
+
+  const reasoningText = isBrowsing ? (browsingEntry?.reasoning || "") : reasoning;
+
+  // Determine which presentation to show
+  const displayPresentation = isBrowsing
+    ? browsingEntry
+      ? { toolName: browsingEntry.toolName, props: browsingEntry.props }
+      : null
+    : currentPresentation;
+
+  const showPresentation = isBrowsing
+    ? !!browsingEntry
+    : (phase === "presenting" || phase === "awaiting") && !!currentPresentation;
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full relative">
+      {/* Reasoning trace — for browsing, show as dimmed header above presentation */}
+      {isBrowsing && browsingEntry?.reasoning && (
+        <div className="absolute top-8 left-0 right-0 flex justify-center z-10 pointer-events-none">
+          <div className="max-w-2xl px-6">
+            <div className="font-mono text-xs leading-relaxed text-ink-faint tracking-wide opacity-50">
+              {browsingEntry.reasoning}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reasoning phase — stays visible through reasoning-done, fades during presenting */}
-      {showReasoning && (
+      {!isBrowsing && showReasoning && (
         <div
           className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
             phase === "presenting" ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
           <ReasoningTrace
-            text={reasoning}
+            text={reasoningText}
             isActive={phase === "reasoning" || phase === "reasoning-done"}
           />
         </div>
       )}
 
-      {/* Presentation phase */}
-      {(phase === "presenting" || phase === "awaiting") && currentPresentation && (
+      {/* Presentation — current or historical */}
+      {showPresentation && displayPresentation && (
         <div
           className={`absolute inset-0 transition-opacity duration-500 ${
-            phase === "presenting" || phase === "awaiting" ? "opacity-100" : "opacity-0"
+            isBrowsing || phase === "presenting" || phase === "awaiting"
+              ? "opacity-100"
+              : "opacity-0"
           }`}
         >
           <ToolRenderer
-            name={currentPresentation.toolName}
-            props={currentPresentation.props}
-            onReady={finishPresentation}
+            key={isBrowsing ? `history-${browsingIndex}` : `current-${currentConceptIndex}`}
+            name={displayPresentation.toolName}
+            props={displayPresentation.props}
+            onReady={isBrowsing ? undefined : finishPresentation}
           />
         </div>
       )}
@@ -216,7 +251,7 @@ export default function Stage() {
       <NavigationControls />
 
       {/* Error state */}
-      {phase === "error" && (
+      {phase === "error" && !isBrowsing && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
           <p className="text-ink-muted font-mono text-sm">{errorMessage}</p>
           <button
@@ -229,7 +264,7 @@ export default function Stage() {
       )}
 
       {/* Complete */}
-      {phase === "complete" && (
+      {phase === "complete" && !isBrowsing && (
         <div className="flex items-center justify-center h-full">
           <p className="text-ink-muted font-mono text-sm">fin.</p>
         </div>
