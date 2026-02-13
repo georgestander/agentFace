@@ -10,6 +10,7 @@ import {
 } from "../agent/parse-stream";
 import ReasoningTrace from "./ReasoningTrace";
 import ToolRenderer from "./ToolRenderer";
+import NavigationControls from "./NavigationControls";
 
 /** Safety timeout for presenting phase — if onReady never fires */
 const PRESENTING_TIMEOUT_MS = 15_000;
@@ -28,7 +29,6 @@ export default function Stage() {
     updateReasoning,
     present,
     finishPresentation,
-    advance,
     setError,
     clearError,
     totalConcepts,
@@ -129,7 +129,8 @@ export default function Stage() {
         state = processSSELine(buffer, state);
       }
 
-      // Stream done — validate and render the tool call
+      // Stream done — validate tool call and transition to reasoning-done
+      // (the visitor clicks "show me" to proceed to presenting)
       if (state.toolCalls.length > 0) {
         const result = validateToolCall(state.toolCalls[0]);
         if (result.valid) {
@@ -174,16 +175,25 @@ export default function Stage() {
     }
   }, [phase, finishPresentation]);
 
+  // Show reasoning during reasoning and reasoning-done phases
+  const showReasoning =
+    phase === "reasoning" ||
+    phase === "reasoning-done" ||
+    (phase === "presenting" && reasoning);
+
   return (
     <div className="flex flex-col items-center justify-center h-full w-full relative">
-      {/* Reasoning phase */}
-      {(phase === "reasoning" || (phase === "presenting" && reasoning)) && (
+      {/* Reasoning phase — stays visible through reasoning-done, fades during presenting */}
+      {showReasoning && (
         <div
           className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
             phase === "presenting" ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
-          <ReasoningTrace text={reasoning} isActive={phase === "reasoning"} />
+          <ReasoningTrace
+            text={reasoning}
+            isActive={phase === "reasoning" || phase === "reasoning-done"}
+          />
         </div>
       )}
 
@@ -202,17 +212,8 @@ export default function Stage() {
         </div>
       )}
 
-      {/* Awaiting — next control */}
-      {phase === "awaiting" && (
-        <div className="absolute bottom-8 right-8 z-10">
-          <button
-            onClick={advance}
-            className="px-5 py-2.5 text-sm font-mono text-ink-muted hover:text-ink border border-stone-300 hover:border-stone-400 rounded-lg transition-colors duration-200 cursor-pointer bg-surface/80 backdrop-blur-sm"
-          >
-            {currentConceptIndex < totalConcepts - 1 ? "next →" : "fin"}
-          </button>
-        </div>
-      )}
+      {/* Navigation controls — centered bottom, context-dependent */}
+      <NavigationControls />
 
       {/* Error state */}
       {phase === "error" && (

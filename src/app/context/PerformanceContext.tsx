@@ -7,6 +7,7 @@ export type PerformancePhase =
   | "intro"
   | "idle"
   | "reasoning"
+  | "reasoning-done"
   | "presenting"
   | "awaiting"
   | "complete"
@@ -39,6 +40,7 @@ interface PerformanceContextValue extends PerformanceState {
   startReasoning: () => void;
   updateReasoning: (text: string) => void;
   present: (toolName: string, props: Record<string, unknown>, toolCallId: string) => void;
+  showPresentation: () => void;
   finishPresentation: () => void;
   advance: () => void;
   setError: (message: string) => void;
@@ -78,13 +80,20 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     (toolName: string, props: Record<string, unknown>, toolCallId: string) => {
       setState((s) => ({
         ...s,
-        phase: "presenting",
+        phase: "reasoning-done",
         currentPresentation: { toolName, props },
         currentToolCallId: toolCallId,
       }));
     },
     []
   );
+
+  const showPresentation = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      phase: "presenting",
+    }));
+  }, []);
 
   const finishPresentation = useCallback(() => {
     setState((s) => ({
@@ -137,6 +146,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
         startReasoning,
         updateReasoning,
         present,
+        showPresentation,
         finishPresentation,
         advance,
         setError,
