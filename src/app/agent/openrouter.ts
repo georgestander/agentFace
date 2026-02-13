@@ -49,28 +49,69 @@ export async function performHandler({ request }: { request: Request }) {
   console.log("[perform] Request: conceptIndex=", conceptIndex, "messages count=", messages.length, "model=", model);
 
   try {
-    const openRouterResponse = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          "HTTP-Referer": "https://georgestander.com",
-          "X-Title": "Agent Face",
-        },
-        body: JSON.stringify({
-          model,
-          stream: true,
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...messages,
-          ],
-          tools,
-          tool_choice: "auto",
-        }),
+    const endpoint = "https://openrouter.ai/api/v1/chat/completions";
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "https://georgestander.com",
+      "X-Title": "Agent Face",
+    };
+
+    const baseBody = {
+      model,
+      stream: true,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      tools,
+      provider: {
+        // Route only to providers that honor requested parameters (tools/tool_choice).
+        require_parameters: true,
+      },
+    };
+
+    let openRouterResponse = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        ...baseBody,
+        // Prefer strict tool usage for deterministic state machine behavior.
+        tool_choice: "required",
+      }),
+    });
+
+    // Some routed providers support tools but not tool_choice="required".
+    // Fall back to auto so tool-capable models still work cross-provider.
+    if (!openRouterResponse.ok) {
+      const firstErrorText = await openRouterResponse.text();
+      const shouldRetryWithAuto =
+        /tool_choice/i.test(firstErrorText) &&
+        (openRouterResponse.status === 400 || openRouterResponse.status === 404);
+
+      if (shouldRetryWithAuto) {
+        console.warn(
+          "[perform] Retrying with tool_choice=auto because required tool choice was not supported by routed providers."
+        );
+        openRouterResponse = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            ...baseBody,
+            tool_choice: "auto",
+          }),
+        });
+      } else {
+        console.error("[perform] API error:", openRouterResponse.status, firstErrorText);
+        return new Response(
+          JSON.stringify({
+            error: "AI service error",
+            status: openRouterResponse.status,
+          }),
+          { status: 502, headers: { "Content-Type": "application/json" } }
+        );
       }
-    );
+    }
 
     if (!openRouterResponse.ok) {
       const errorText = await openRouterResponse.text();
