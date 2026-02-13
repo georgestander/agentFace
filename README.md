@@ -12,6 +12,11 @@ pnpm install    # or npm install
 # (already created — just replace the placeholder)
 echo "OPENROUTER_API_KEY=sk-or-..." > .dev.vars
 
+# Optional: override model/provider locally
+# Format is "<provider>/<model>"
+# Example: AI_MODEL=openai/gpt-4o
+echo "AI_MODEL=anthropic/claude-sonnet-4" >> .dev.vars
+
 # Start dev server
 pnpm dev
 ```
@@ -29,7 +34,8 @@ Open [http://localhost:5173](http://localhost:5173)
 ## Environment
 
 - `OPENROUTER_API_KEY` — required. For local dev, set in `.dev.vars`. For production, use `npx wrangler secret put OPENROUTER_API_KEY`.
-- `AI_MODEL` — optional, defaults to `anthropic/claude-sonnet-4` (set in wrangler.jsonc)
+- `AI_MODEL` — optional, defaults to `anthropic/claude-sonnet-4` (set in `wrangler.jsonc` for deploy).  
+  You can also set a local override in `.dev.vars` (same format): `AI_MODEL=<provider>/<model>`.
 
 ## Stack
 
