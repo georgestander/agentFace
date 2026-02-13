@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { buildPerformancePrompt } from "./system-prompt";
-import { getOpenRouterTools } from "../tools/registry";
+import { getOpenRouterTools, getToolByName } from "../tools/registry";
 import { CONCEPTS } from "./concepts";
 import {
   type SessionStartRequest,
@@ -281,6 +281,22 @@ export async function sessionStepHandler({ request }: { request: Request }) {
           const cleanProps = { ...toolProps };
           delete cleanProps._uiMood;
           delete cleanProps._intentLabel;
+
+          // Validate tool props against the Zod schema
+          const toolDef = getToolByName(tc.name);
+          if (toolDef) {
+            const result = toolDef.schema.safeParse(cleanProps);
+            if (!result.success) {
+              console.error(
+                `[session/step] Tool ${tc.name} validation failed:`,
+                result.error.issues
+              );
+              write("status", { phase: "error" });
+              write("done", { ok: false, error: "Tool output failed validation" });
+              writer.close();
+              return;
+            }
+          }
 
           const concept = CONCEPTS[stepIndex];
           const packet = {

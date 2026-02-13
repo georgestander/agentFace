@@ -1,12 +1,39 @@
 "use client";
 
-import { Suspense } from "react";
+import { Component, Suspense, type ReactNode } from "react";
 import { TOOL_RENDERERS } from "../tools/renderers";
 
 interface ToolRendererProps {
   name: string;
   props: Record<string, unknown>;
   onReady?: () => void;
+}
+
+/** Error boundary that catches render failures from tool components. */
+class ToolErrorBoundary extends Component<
+  { name: string; children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error(`[ToolRenderer] ${this.props.name} crashed:`, error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-full text-ink-muted text-sm font-mono">
+          presentation failed to render
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 export default function ToolRenderer({ name, props, onReady }: ToolRendererProps) {
@@ -22,14 +49,16 @@ export default function ToolRenderer({ name, props, onReady }: ToolRendererProps
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center h-full text-ink-faint text-xs font-mono animate-pulse">
-          loading...
-        </div>
-      }
-    >
-      <Component props={props} onReady={onReady} />
-    </Suspense>
+    <ToolErrorBoundary name={name}>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-full text-ink-faint text-xs font-mono animate-pulse">
+            loading...
+          </div>
+        }
+      >
+        <Component props={props} onReady={onReady} />
+      </Suspense>
+    </ToolErrorBoundary>
   );
 }
