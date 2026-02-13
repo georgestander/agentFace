@@ -10,7 +10,7 @@
 import { useEffect, useState } from "react";
 
 const INTRO_TEXT =
-  "I'm George's agent. I'm going to walk you through how he thinks — one concept at a time. I'll reason about each idea, then present it in a way that fits.";
+  "I'm George's agent. I have a set of UI primitives to communicate his thinking — and he gave me free reign. I'll reason about each idea, then present it however I see fit.";
 
 const CHAR_DELAY_MS = 30;
 const BUTTON_DELAY_MS = 400;
