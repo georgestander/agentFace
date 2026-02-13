@@ -15,9 +15,10 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { type StepPacket, type TokenUsage, PROMPT_VERSION } from "./types";
 import { CONCEPTS } from "../agent/concepts";
 import {
-  generateSessionId,
   loadSession,
   cleanExpiredSessions,
+  saveActiveSession,
+  loadActiveSession,
 } from "./session-store";
 import {
   initThread,
@@ -123,6 +124,36 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
     cleanExpiredSessions();
 
     try {
+      // Check for a persisted session from a previous page load (refresh)
+      const activeRef = loadActiveSession();
+      let sessionId: string;
+      let model: string;
+      let totalConcepts: number;
+
+      if (activeRef) {
+        // Validate that the persisted session still has cached data
+        const persisted = loadSession(activeRef.sessionId, activeRef.model, activeRef.promptVersion);
+        if (persisted && activeRef.promptVersion === PROMPT_VERSION) {
+          // Reuse the existing session — cache replay works across refresh
+          sessionId = activeRef.sessionId;
+          model = activeRef.model;
+          totalConcepts = CONCEPTS.length;
+
+          initThread(sessionId, model, PROMPT_VERSION);
+          packetsRef.current = { ...persisted.packets };
+
+          setState((s) => ({
+            ...s,
+            sessionId,
+            totalConcepts,
+            model,
+            phase: "idle",
+          }));
+          return;
+        }
+      }
+
+      // No valid persisted session — start fresh
       const response = await fetch("/api/session/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -134,13 +165,17 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
       }
 
       const data = await response.json();
-      const { sessionId, totalConcepts } = data;
-      const model = data.cacheVersion?.split(":")?.[0] || "";
+      sessionId = data.sessionId;
+      model = data.model || "";
+      totalConcepts = data.totalConcepts;
 
-      // Init thread store (hydrates from localStorage)
+      // Persist session identity so refresh can reuse it
+      saveActiveSession({ sessionId, model, promptVersion: PROMPT_VERSION });
+
+      // Init thread store (hydrates from localStorage if any)
       initThread(sessionId, model, PROMPT_VERSION);
 
-      // Restore any cached packets
+      // Restore any cached packets (unlikely for fresh session, but safe)
       const persisted = loadSession(sessionId, model, PROMPT_VERSION);
       if (persisted?.packets) {
         packetsRef.current = { ...persisted.packets };
@@ -190,7 +225,17 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
 
     // Tab lock — prevent duplicate generation
     if (!acquireLock(s.sessionId, stepIndex)) {
-      // Another tab is generating this step — wait for broadcast
+      // Another tab is generating this step — transition to reasoning
+      // so the sync handler can pick up the packet when it arrives
+      setCurrentStep(stepIndex);
+      setState((prev) => ({
+        ...prev,
+        currentStep: stepIndex,
+        currentPacket: null,
+        thoughtDelta: "",
+        phase: "reasoning",
+        browsingIndex: null,
+      }));
       return;
     }
 
@@ -494,8 +539,14 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
         storePacket(msg.packet);
         packetsRef.current[msg.stepIndex] = msg.packet;
 
-        // If this was the step we're waiting for, render it
-        if (msg.stepIndex === stateRef.current.currentStep && stateRef.current.phase === "reasoning") {
+        // If this was the step we're waiting for, render it.
+        // Check both "reasoning" (normal wait) and "idle" (edge case where
+        // the tab hadn't yet transitioned when the broadcast arrived).
+        const currentPhase = stateRef.current.phase;
+        if (
+          msg.stepIndex === stateRef.current.currentStep &&
+          (currentPhase === "reasoning" || currentPhase === "idle")
+        ) {
           setState((prev) => ({
             ...prev,
             currentPacket: msg.packet,

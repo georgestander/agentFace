@@ -143,6 +143,45 @@ export function updateTotals(
 }
 
 // ---------------------------------------------------------------------------
+// Active session identity — persisted in sessionStorage so it survives
+// refresh but not new browser windows (new tabs get a new session).
+// ---------------------------------------------------------------------------
+
+const ACTIVE_SESSION_KEY = "agent-face:v3:active-session";
+
+interface ActiveSessionRef {
+  sessionId: string;
+  model: string;
+  promptVersion: string;
+}
+
+export function saveActiveSession(ref: ActiveSessionRef): void {
+  try {
+    sessionStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(ref));
+  } catch {
+    // Degrade silently
+  }
+}
+
+export function loadActiveSession(): ActiveSessionRef | null {
+  try {
+    const raw = sessionStorage.getItem(ACTIVE_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ActiveSessionRef;
+  } catch {
+    return null;
+  }
+}
+
+export function clearActiveSession(): void {
+  try {
+    sessionStorage.removeItem(ACTIVE_SESSION_KEY);
+  } catch {
+    // Degrade silently
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Cleanup — remove expired sessions
 // ---------------------------------------------------------------------------
 
