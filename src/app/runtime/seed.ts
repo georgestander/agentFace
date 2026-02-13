@@ -105,6 +105,33 @@ export function deriveIntent(seed: number): IntentSpec {
 }
 
 // ---------------------------------------------------------------------------
+// Thought style variant — deterministic per step
+// ---------------------------------------------------------------------------
+
+export const THOUGHT_STYLES = [
+  "ticker",
+  "pulse-line",
+  "terminal-ledger",
+  "dossier-note",
+] as const;
+
+export type ThoughtStyle = (typeof THOUGHT_STYLES)[number];
+
+export function deriveThoughtStyle(
+  seed: number,
+  previousStyle?: ThoughtStyle
+): ThoughtStyle {
+  let style = pick(seed, THOUGHT_STYLES, 13);
+  if (previousStyle && style === previousStyle) {
+    style = pick(seed, THOUGHT_STYLES, 14);
+    if (style === previousStyle) {
+      style = pick(seed, THOUGHT_STYLES, 15);
+    }
+  }
+  return style;
+}
+
+// ---------------------------------------------------------------------------
 // Background variant (for AmbientBackdrop — Phase 6, but seed is ready now)
 // ---------------------------------------------------------------------------
 

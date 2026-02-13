@@ -7,10 +7,14 @@
  * rendering, reasoning display, error states, and navigation controls.
  */
 
+import { useMemo } from "react";
 import type { ShowSessionState, ShowSessionActions } from "../runtime/useShowSession";
-import ReasoningTrace from "./ReasoningTrace";
+import ThoughtRail from "./ThoughtRail";
 import ToolRenderer from "./ToolRenderer";
 import NavigationControlsV3 from "./NavigationControlsV3";
+import { CONCEPTS } from "../agent/concepts";
+import { buildSeed, deriveThoughtStyle, type ThoughtStyle } from "../runtime/seed";
+import { PROMPT_VERSION } from "../runtime/types";
 
 function ThinkingDots() {
   return (
@@ -40,15 +44,36 @@ export default function StageV3({ session }: StageV3Props) {
   const isBrowsing = session.browsingIndex !== null;
   const browsingPacket = isBrowsing ? session.currentPacket : null;
 
-  // Determine reasoning display
-  const showReasoning =
-    isBrowsing ||
-    session.phase === "reasoning" ||
-    session.phase === "reasoning-done";
+  // Derive deterministic thought style from seed
+  const activeStepIndex = isBrowsing
+    ? (session.browsingIndex ?? 0)
+    : session.currentStep;
 
+  const thoughtStyle = useMemo<ThoughtStyle>(() => {
+    if (!session.sessionId || !session.model) return "pulse-line";
+    const concept = CONCEPTS[activeStepIndex];
+    if (!concept) return "pulse-line";
+    const seed = buildSeed(session.sessionId, activeStepIndex, concept.id, PROMPT_VERSION, session.model);
+    const prevConcept = activeStepIndex > 0 ? CONCEPTS[activeStepIndex - 1] : null;
+    const prevStyle = prevConcept
+      ? deriveThoughtStyle(buildSeed(session.sessionId, activeStepIndex - 1, prevConcept.id, PROMPT_VERSION, session.model))
+      : undefined;
+    return deriveThoughtStyle(seed, prevStyle);
+  }, [session.sessionId, session.model, activeStepIndex]);
+
+  // Reasoning text
   const reasoningText = isBrowsing
     ? browsingPacket?.thoughtFull || ""
     : session.thoughtDelta;
+
+  const isStreaming = session.phase === "reasoning";
+  const thoughtExpanded =
+    isStreaming ||
+    session.phase === "reasoning-done" ||
+    isBrowsing;
+
+  // Step tokens from current packet
+  const stepTokens = session.currentPacket?.tokenUsage?.completionTokens;
 
   // Determine presentation display
   const displayPresentation = session.currentPacket
@@ -83,27 +108,14 @@ export default function StageV3({ session }: StageV3Props) {
         </div>
       )}
 
-      {/* Reasoning trace */}
-      {showReasoning && (
-        <div className="absolute left-1/2 bottom-24 z-20 w-full -translate-x-1/2 px-6 text-center">
-          <div
-            className={`mx-auto w-fit transition-all duration-500 ${
-              isBrowsing
-                ? "opacity-90"
-                : session.phase === "presenting"
-                  ? "opacity-0 pointer-events-none"
-                  : "opacity-100"
-            }`}
-          >
-            <ReasoningTrace
-              text={reasoningText}
-              isActive={session.phase === "reasoning"}
-              collapsed={isBrowsing}
-            />
-          </div>
-          {session.phase === "reasoning" && <ThinkingDots />}
-        </div>
-      )}
+      {/* ThoughtRail — replaces ReasoningTrace */}
+      <ThoughtRail
+        text={reasoningText}
+        isStreaming={isStreaming}
+        expanded={thoughtExpanded}
+        style={thoughtStyle}
+        stepTokens={stepTokens}
+      />
 
       {/* Navigation controls */}
       <NavigationControlsV3
