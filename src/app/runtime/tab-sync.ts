@@ -72,23 +72,33 @@ function releaseLock(sessionId: string, stepIndex: number): void {
 /**
  * Try to acquire the generation lock for a step.
  * Returns true if this tab should generate, false if another tab owns it.
+ *
+ * Uses CAS emulation: write our lock, then immediately re-read and verify
+ * we still own it. If another tab overwrote us in the gap, we lost the race.
  */
 export function acquireLock(sessionId: string, stepIndex: number): boolean {
   const existing = readLock(sessionId, stepIndex);
 
-  if (!existing || Date.now() >= existing.expiresAt) {
-    // No lock or expired — acquire
-    writeLock(sessionId, stepIndex);
-    return true;
+  if (existing && Date.now() < existing.expiresAt) {
+    if (existing.ownerTabId === TAB_ID) {
+      // We already own it (e.g. retry)
+      return true;
+    }
+    // Another tab holds a live lock
+    return false;
   }
 
-  if (existing.ownerTabId === TAB_ID) {
-    // We already own it (e.g. retry)
-    return true;
+  // No lock or expired — attempt to acquire with CAS verification
+  writeLock(sessionId, stepIndex);
+
+  // Re-read immediately to verify we won the race
+  const verification = readLock(sessionId, stepIndex);
+  if (!verification || verification.ownerTabId !== TAB_ID) {
+    // Another tab overwrote us — we lost the race
+    return false;
   }
 
-  // Another tab holds a live lock
-  return false;
+  return true;
 }
 
 export function releaseStepLock(sessionId: string, stepIndex: number): void {
