@@ -15,7 +15,7 @@ import NavigationControls from "./NavigationControls";
 /** Safety timeout for presenting phase — if onReady never fires */
 const PRESENTING_TIMEOUT_MS = 15_000;
 /** Timeout for the fetch request to /api/perform */
-const FETCH_TIMEOUT_MS = 30_000;
+const FETCH_TIMEOUT_MS = 60_000;
 const DEBUG_STREAM = import.meta.env.DEV;
 
 function debugLog(...args: unknown[]) {
