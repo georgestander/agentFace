@@ -53,7 +53,6 @@ Create a responsive performer flow with concise reasoning, staged transitions, m
 - Move toward deterministic anti-repetition tooling so stage interfaces stay emergent.
 
 ## Open Questions
-- Should `/projects` stay as a redirect or be fully removed?
 - Which tools should be exempt from anti-repetition to avoid dead-ends in later turns?
 
 ## Phase-Log Map
@@ -63,4 +62,4 @@ Create a responsive performer flow with concise reasoning, staged transitions, m
 | UX Shell and Navigation | 2026-02-13T08:58:22Z |
 | Reasoning Compactness | 2026-02-13T08:58:22Z |
 | Tool Variety and Manual Progression | 2026-02-13T12:00:00Z |
-| Responsive Finalization | 2026-02-13T08:58:22Z |
+| Responsive Finalization | 2026-02-13T12:00:00Z |
