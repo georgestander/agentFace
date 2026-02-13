@@ -6,7 +6,7 @@ import Conventional from "@/app/pages/Conventional";
 import About from "@/app/pages/About";
 import Projects from "@/app/pages/Projects";
 import Contact from "@/app/pages/Contact";
-import { chatHandler, performHandler } from "@/app/agent/openrouter";
+import { performHandler } from "@/app/agent/openrouter";
 
 export default defineApp([
   render(Document, [
@@ -15,7 +15,6 @@ export default defineApp([
     route("/about", About),
     route("/projects", Projects),
     route("/contact", Contact),
-    route("/api/chat", { post: chatHandler }),
     route("/api/perform", { post: performHandler }),
   ]),
 ]);

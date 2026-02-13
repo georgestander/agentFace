@@ -1,4 +1,4 @@
-import { CONCEPTS, type Concept } from "./concepts";
+import { CONCEPTS } from "./concepts";
 
 /**
  * Build the system prompt for the agent performer.
@@ -57,9 +57,4 @@ Themes: ${concept.themes.join(", ")}
 - Keep reasoning brief (1-3 sentences). The presentation is the point, not the reasoning.
 - Each concept deserves a different approach. Do not fall into patterns.
 - If the visitor interacted with your previous presentation, acknowledge that briefly in your reasoning before moving on.${interactionContext}`;
-}
-
-// Keep backward compatibility for the old chat system during migration
-export function buildSystemPrompt(): string {
-  return buildPerformancePrompt(0);
 }

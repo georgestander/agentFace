@@ -28,15 +28,17 @@ No automated test suite. Verify with `pnpm build` + manual smoke test in `pnpm d
 ### Performance Flow
 
 ```
-Page loads → Agent reads concept → Reasons visibly (SSE streamed text)
-  → Calls a presentation tool → Tool renders on canvas → Stops
-  → Visitor hits "next" → Agent picks next concept + tool → Repeat
+Visitor arrives → Intro screen (typewriter text, "yes, show me" / "no" choice)
+  → "yes" → Agent reads concept → Reasons visibly (SSE streamed text)
+  → Visitor clicks "show me" → Tool renders on canvas → Stops
+  → Visitor clicks "next" (or "← back" to revisit) → Repeat
+  → All concepts done → FinScreen with about/projects/contact buttons
+  → "no" → Conventional static page
 ```
 
-### Two API Routes
+### API Route
 
 - `POST /api/perform` — The performer endpoint. Sends concepts + tool definitions to OpenRouter with `tool_choice: "auto"`. Streams back reasoning (content) + tool calls (function calling).
-- `POST /api/chat` — Legacy chatbot endpoint (kept for backward compat during migration).
 
 ### Tool System
 
@@ -52,21 +54,37 @@ The registry (`tools/registry.ts`) collects all tools and exports them in OpenRo
 ### SSE Stream Parsing
 
 `src/app/agent/parse-stream.ts` handles OpenRouter's streaming format for tool calling:
-- `delta.content` → reasoning text (shown to visitor in real-time)
+- `delta.content` → reasoning text (shown to visitor in real-time, just regular model output — no reasoning/thinking model)
 - `delta.tool_calls` → tool name + arguments (accumulated as partial JSON fragments, validated after `[DONE]`)
-
-This replaces the old `parse-response.ts` regex-based approach.
 
 ### State Machine
 
-`src/app/context/PerformanceContext.tsx` manages: `idle → reasoning → presenting → awaiting → idle → ...`
+`src/app/context/PerformanceContext.tsx` manages the full lifecycle:
+
+```
+intro → idle → reasoning → reasoning-done → presenting → awaiting → idle → ... → complete
+                                                              ↕ (browsing history)
+                                                           error (recoverable)
+```
+
+**Key phases:**
+- `intro` — Initial state. IntroScreen with typewriter effect + yes/no choice.
+- `reasoning` — Agent is streaming reasoning text.
+- `reasoning-done` — Reasoning complete, "show me" button visible, visitor decides when to see the presentation.
+- `presenting` — Tool is rendering (15s safety timeout if onReady never fires).
+- `awaiting` — Presentation complete, "next" and "← back" buttons visible.
+- `error` — Recoverable error with "try again" button.
+- `complete` — All concepts done, FinScreen shown.
+
+**History browsing:** Visitor can click "← back" or click past concepts in ConceptBox to revisit historical presentations without re-calling the API.
 
 ### Key Directories
 
 - `src/app/tools/definitions/` — Tool schemas (Zod + OpenAI function defs)
 - `src/app/tools/renderers/` — Tool React components
 - `src/app/agent/` — Server-side: OpenRouter handler, system prompt, concepts data, stream parser
-- `src/app/components/` — Stage (main canvas), ConceptBox (top-right), ReasoningTrace, ToolRenderer
+- `src/app/components/` — Stage, ConceptBox, IntroScreen, FinScreen, NavigationControls, Header, Footer, ReasoningTrace, ToolRenderer
+- `src/app/pages/` — Home (performer), Conventional (static fallback), About, Projects, Contact
 
 ### Multi-Turn Conversation Format
 
@@ -79,7 +97,15 @@ The Stage component reconstructs this from its history when requesting the next 
 
 ### Concepts
 
-`src/app/agent/concepts.ts` — Array of `Concept` objects (id, bullet, elaboration, themes). The bullet is shown in the ConceptBox UI. The full concept is injected into the system prompt for the agent to reason about.
+`src/app/agent/concepts.ts` — Array of `Concept` objects (id, bullet, elaboration, themes). The bullet is shown in the ConceptBox UI (progressively revealed). The full concept is injected into the system prompt for the agent to reason about.
+
+### Error Recovery
+
+- 30s fetch timeout via AbortController
+- Tool validation failure transitions to error phase (not silent)
+- Missing tool call in response transitions to error phase
+- 15s safety timeout on presenting phase if onReady never fires
+- Error phase shows contextual message + "try again" button
 
 ## Conventions
 
