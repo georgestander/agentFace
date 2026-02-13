@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import { CONCEPTS } from "../agent/concepts";
 
 export type PerformancePhase =
+  | "intro"
   | "idle"
   | "reasoning"
   | "presenting"
@@ -42,6 +43,7 @@ interface PerformanceContextValue extends PerformanceState {
   advance: () => void;
   setError: (message: string) => void;
   clearError: () => void;
+  startPerformance: () => void;
   totalConcepts: number;
 }
 
@@ -55,7 +57,7 @@ export function usePerformance(): PerformanceContextValue {
 
 export function PerformanceProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PerformanceState>({
-    phase: "idle",
+    phase: "intro",
     currentConceptIndex: 0,
     reasoning: "",
     currentPresentation: null,
@@ -99,6 +101,10 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, phase: "idle", errorMessage: "" }));
   }, []);
 
+  const startPerformance = useCallback(() => {
+    setState((s) => ({ ...s, phase: "idle" }));
+  }, []);
+
   const advance = useCallback(() => {
     setState((s) => {
       const entry: HistoryEntry = {
@@ -135,6 +141,7 @@ export function PerformanceProvider({ children }: { children: ReactNode }) {
         advance,
         setError,
         clearError,
+        startPerformance,
         totalConcepts: CONCEPTS.length,
       }}
     >
