@@ -18,7 +18,6 @@ export default function NavigationControls() {
   const isBrowsing = browsingIndex !== null;
   const isLastConcept = currentConceptIndex >= totalConcepts - 1;
   const canGoBack = isBrowsing ? browsingIndex > 0 : history.length > 0;
-  const canGoForward = isBrowsing;
 
   // Show during: reasoning-done, awaiting, or while browsing history
   const showControls =
@@ -37,7 +36,7 @@ export default function NavigationControls() {
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3">
       {/* Back button */}
-      {canGoBack && phase === "awaiting" && (
+      {canGoBack && (phase === "awaiting" || isBrowsing) && (
         <button onClick={goBack} className={secondaryClass}>
           &larr; back
         </button>

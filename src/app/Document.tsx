@@ -19,25 +19,25 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
                 extend: {
                   colors: {
                     surface: {
-                      DEFAULT: '#fafaf9',
-                      raised: '#f5f5f4',
-                      overlay: '#e7e5e4',
+                      DEFAULT: '#f8f8f7',
+                      raised: '#efeeed',
+                      overlay: '#e5e4e3',
                     },
                     ink: {
-                      DEFAULT: '#1c1917',
-                      muted: '#78716c',
-                      faint: '#a8a29e',
+                      DEFAULT: '#111111',
+                      muted: '#66625f',
+                      faint: '#8d8a87',
                     },
                     accent: {
-                      DEFAULT: '#7c3aed',
-                      light: '#c4b5fd',
-                      faint: '#ede9fe',
+                      DEFAULT: '#2f2f2f',
+                      light: '#595959',
+                      faint: '#ececec',
                     },
                   },
                   fontFamily: {
-                    sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-                    mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-                    serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
+                    sans: ['system-ui', '-apple-system', 'sans-serif'],
+                    mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+                    serif: ['Georgia', 'Times New Roman', 'serif'],
                   },
                 },
               },
@@ -45,24 +45,39 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
           `,
         }}
       />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet"
-      />
       <style
         dangerouslySetInnerHTML={{
           __html: `
             body {
-              background-color: #fafaf9;
-              color: #1c1917;
-              font-family: 'Inter', system-ui, -apple-system, sans-serif;
+              background-color: #f8f8f7;
+              color: #111111;
+              font-family: system-ui, -apple-system, sans-serif;
+            }
+
+            @keyframes thinking-dot {
+              0% {
+                transform: translateY(0);
+                opacity: 0.3;
+              }
+              30% {
+                transform: translateY(-2px);
+                opacity: 0.9;
+              }
+              60% {
+                transform: translateY(0);
+                opacity: 0.3;
+              }
+              100% {
+                transform: translateY(0);
+                opacity: 0.3;
+              }
             }
 
             /* Scrollbar styling */
             ::-webkit-scrollbar { width: 6px; }
             ::-webkit-scrollbar-track { background: transparent; }
-            ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
-            ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+            ::-webkit-scrollbar-thumb { background: #c5c5c4; border-radius: 3px; }
+            ::-webkit-scrollbar-thumb:hover { background: #9a9998; }
           `,
         }}
       />

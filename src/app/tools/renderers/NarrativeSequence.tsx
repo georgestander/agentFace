@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import type { NarrativeSequenceProps } from "../definitions/narrative-sequence";
 
 interface Props {
@@ -18,75 +18,60 @@ export default function NarrativeSequence({ props, onReady }: Props) {
   const { beats, conclusion } = props as NarrativeSequenceProps;
   const [currentBeat, setCurrentBeat] = useState(0);
   const [showConclusion, setShowConclusion] = useState(false);
-  const [beatVisible, setBeatVisible] = useState(true);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    if (currentBeat >= beats.length) {
-      if (conclusion) {
-        setShowConclusion(true);
-      }
-      onReady?.();
-      return;
+    if (currentBeat >= beats.length && !showConclusion) {
+      setShowConclusion(true);
     }
+  }, [currentBeat, beats.length, showConclusion]);
 
-    const pause = beats[currentBeat].pause ?? 2500;
+  useEffect(() => {
+    if (showConclusion && onReady) {
+      onReady();
+    }
+  }, [showConclusion, onReady]);
 
-    // Show beat
-    setBeatVisible(true);
-
-    timerRef.current = setTimeout(() => {
-      // Fade out before next
-      setBeatVisible(false);
-      setTimeout(() => {
-        setCurrentBeat((b) => b + 1);
-      }, 400);
-    }, pause);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [currentBeat, beats, conclusion, onReady]);
-
+  const isLastBeat = currentBeat >= beats.length - 1;
   const beat = beats[currentBeat];
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-8 relative">
-      {/* Current beat */}
-      {beat && !showConclusion && (
-        <p
-          className={`text-center max-w-3xl leading-relaxed transition-all duration-400 ease-out ${
-            emphasisStyles[beat.emphasis || "normal"]
-          } ${beatVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
-        >
-          {beat.text}
-        </p>
-      )}
+      {beat && !showConclusion ? (
+        <>
+          <p
+            className={`text-center max-w-3xl leading-relaxed transition-all duration-400 ease-out ${
+              emphasisStyles[beat.emphasis || "normal"]
+            }`}
+          >
+            {beat.text}
+          </p>
 
-      {/* Beat indicator */}
-      {!showConclusion && (
-        <div className="absolute bottom-12 flex gap-2">
-          {beats.map((_, i) => (
-            <div
-              key={i}
-              className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                i === currentBeat
-                  ? "bg-ink"
-                  : i < currentBeat
+          <button
+            onClick={() => setCurrentBeat((b) => Math.min(b + 1, beats.length))}
+            className="mt-8 text-sm font-mono text-ink-faint hover:text-ink transition-colors duration-200"
+          >
+            {isLastBeat ? "show conclusion" : "next beat"}
+          </button>
+
+          <div className="absolute bottom-12 flex gap-2" aria-label="Beat progress">
+            {beats.map((_, i) => (
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                  i === currentBeat
+                    ? "bg-ink"
+                    : i < currentBeat
                     ? "bg-ink-faint"
                     : "bg-stone-300"
-              }`}
-            />
-          ))}
-        </div>
-      )}
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
 
-      {/* Conclusion */}
       {showConclusion && conclusion && (
-        <p
-          className="text-center text-xl md:text-2xl text-ink max-w-2xl leading-relaxed font-serif animate-fade-in"
-          style={{ animation: "fadeIn 0.6s ease-out" }}
-        >
+        <p className="text-center text-xl md:text-2xl text-ink max-w-2xl leading-relaxed font-serif transition-opacity duration-700 opacity-100">
           {conclusion}
         </p>
       )}

@@ -6,6 +6,7 @@ interface PerformRequest {
   messages: Array<Record<string, unknown>>;
   conceptIndex: number;
   interaction?: unknown;
+  usedTools?: string[];
 }
 
 /**
@@ -26,7 +27,7 @@ export async function performHandler({ request }: { request: Request }) {
     });
   }
 
-  const { messages, conceptIndex, interaction } = body;
+  const { messages, conceptIndex, interaction, usedTools } = body;
   if (!Array.isArray(messages) || typeof conceptIndex !== "number") {
     return new Response(
       JSON.stringify({ error: "messages (array) and conceptIndex (number) required" }),
@@ -43,7 +44,11 @@ export async function performHandler({ request }: { request: Request }) {
   }
 
   const model = (env as any).AI_MODEL || "anthropic/claude-sonnet-4";
-  const systemPrompt = buildPerformancePrompt(conceptIndex, interaction);
+  const systemPrompt = buildPerformancePrompt(
+    conceptIndex,
+    interaction,
+    usedTools || []
+  );
   const tools = getOpenRouterTools();
 
   console.log("[perform] Request: conceptIndex=", conceptIndex, "messages count=", messages.length, "model=", model);
@@ -65,42 +70,46 @@ export async function performHandler({ request }: { request: Request }) {
         ...messages,
       ],
       tools,
-      provider: {
-        // Route only to providers that honor requested parameters (tools/tool_choice).
-        require_parameters: true,
-      },
     };
 
-    let openRouterResponse = await fetch(endpoint, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
+    const callOpenRouter = async (
+      toolChoice: "required" | "auto",
+      includeParallel: boolean
+    ) => {
+      const payload = {
         ...baseBody,
-        // Prefer strict tool usage for deterministic state machine behavior.
-        tool_choice: "required",
-      }),
-    });
+        tool_choice: toolChoice,
+        ...(includeParallel ? { parallel_tool_calls: false } : {}),
+      };
 
-    // Some routed providers support tools but not tool_choice="required".
+      return fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+    };
+
+    let openRouterResponse = await callOpenRouter("required", true);
+
+    // Some routed providers support tools but not strict tool settings.
     // Fall back to auto so tool-capable models still work cross-provider.
     if (!openRouterResponse.ok) {
       const firstErrorText = await openRouterResponse.text();
       const shouldRetryWithAuto =
         /tool_choice/i.test(firstErrorText) &&
         (openRouterResponse.status === 400 || openRouterResponse.status === 404);
+      const shouldRetryNoParallel = /parallel_tool_calls/i.test(firstErrorText);
 
-      if (shouldRetryWithAuto) {
+      if (shouldRetryNoParallel) {
+        console.warn(
+          "[perform] Retrying without parallel_tool_calls because provider doesn't support it."
+        );
+        openRouterResponse = await callOpenRouter(shouldRetryWithAuto ? "auto" : "required", false);
+      } else if (shouldRetryWithAuto) {
         console.warn(
           "[perform] Retrying with tool_choice=auto because required tool choice was not supported by routed providers."
         );
-        openRouterResponse = await fetch(endpoint, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            ...baseBody,
-            tool_choice: "auto",
-          }),
-        });
+        openRouterResponse = await callOpenRouter("auto", true);
       } else {
         console.error("[perform] API error:", openRouterResponse.status, firstErrorText);
         return new Response(

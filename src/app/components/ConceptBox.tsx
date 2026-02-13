@@ -17,7 +17,7 @@ export default function ConceptBox() {
     : -1;
 
   return (
-    <div className="fixed top-6 right-6 w-56 z-20">
+    <div className="fixed top-6 right-4 z-20 w-[42vw] max-w-56 min-w-28 sm:right-6 sm:w-56">
       <ul className="space-y-2">
         {CONCEPTS.map((concept, i) => {
           // Only show concepts up to maxVisible

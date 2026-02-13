@@ -31,7 +31,7 @@ export default function FinScreen() {
         </p>
 
         <div
-          className={`mt-12 flex items-center justify-center gap-6 transition-all duration-500 ${
+          className={`mt-12 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 transition-all duration-500 ${
             showButtons ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
           }`}
         >
@@ -42,10 +42,10 @@ export default function FinScreen() {
             about
           </a>
           <a
-            href="/projects"
+            href="/musings"
             className="px-5 py-2.5 text-sm font-mono text-ink-muted hover:text-ink border border-stone-300 hover:border-stone-400 rounded-lg transition-colors duration-200"
           >
-            projects
+            musings
           </a>
           <a
             href="/contact"

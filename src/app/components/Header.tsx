@@ -11,7 +11,10 @@ export default function Header({ visible }: HeaderProps) {
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
-      <a href="/" className="text-xs font-mono text-ink-faint hover:text-ink-muted transition-colors">
+      <a
+        href="/"
+        className="text-xs font-mono text-ink-faint hover:text-ink transition-colors tracking-[0.08em] uppercase"
+      >
         George Stander
       </a>
     </header>

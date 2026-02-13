@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { usePerformance } from "../context/PerformanceContext";
 import {
   createStreamState,
@@ -26,6 +26,26 @@ function debugWarn(...args: unknown[]) {
   if (DEBUG_STREAM) console.warn(...args);
 }
 
+function ThinkingDots() {
+  return (
+    <div className="flex items-center justify-center gap-1.5 text-ink-faint" aria-hidden="true">
+      {Array.from({ length: 3 }).map((_, index) => {
+        const delay = `${index * 120}ms`;
+        return (
+          <span
+            key={index}
+            className="block w-1 h-1 rounded-full bg-ink-faint"
+            style={{
+              animation: "thinking-dot 1s infinite",
+              animationDelay: delay,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Stage() {
   const {
     phase,
@@ -46,8 +66,7 @@ export default function Stage() {
 
   const isPerforming = useRef(false);
 
-  // Use refs for values that perform() needs so the callback
-  // doesn't go stale across state transitions
+  // Use refs for values that perform() needs so the callback doesn't go stale across state transitions
   const historyRef = useRef(history);
   const conceptIndexRef = useRef(currentConceptIndex);
   historyRef.current = history;
@@ -62,6 +81,7 @@ export default function Stage() {
       debugWarn("[Stage] perform() skipped — already performing");
       return;
     }
+
     isPerforming.current = true;
     debugLog(
       "[Stage] perform() starting for concept",
@@ -116,9 +136,11 @@ export default function Stage() {
             : "The visitor is ready. Present the first concept now.",
       });
 
+      const usedTools = currentHistory.map((entry) => entry.toolName);
       const requestBody = {
         messages,
         conceptIndex: currentIndex,
+        usedTools,
       };
       debugLog("[Stage] Sending request:", JSON.stringify(requestBody, null, 2));
 
@@ -139,16 +161,12 @@ export default function Stage() {
       const decoder = new TextDecoder();
       let state: StreamState = createStreamState();
       let buffer = "";
-      let chunkCount = 0;
-      let rawData = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        chunkCount++;
-        rawData += chunk;
         buffer += chunk;
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
@@ -172,8 +190,6 @@ export default function Stage() {
           throw new Error(`OPENROUTER_STREAM_ERROR: ${state.streamError}`);
         }
       }
-      debugLog("[Stage] Stream complete. Chunks:", chunkCount, "Raw data length:", rawData.length);
-      debugLog("[Stage] Raw SSE data (first 3000 chars):", rawData.slice(0, 3000));
 
       // Stream done — validate tool call and transition to reasoning-done
       // (the visitor clicks "show me" to proceed to presenting)
@@ -224,16 +240,9 @@ export default function Stage() {
 
   // Auto-trigger performance when phase becomes idle (and we have concepts left)
   useEffect(() => {
-    debugLog(
-      "[Stage] useEffect: phase=",
-      phase,
-      "conceptIndex=",
-      currentConceptIndex,
-      "total=",
-      totalConcepts
-    );
+    debugLog("[Stage] useEffect: phase=", phase, "conceptIndex=", currentConceptIndex, "total=", totalConcepts);
     if (phase === "idle" && currentConceptIndex < totalConcepts) {
-      debugLog("[Stage] Auto-triggering perform()");
+      debugLog("[Stage] Auto-triggering perform()", { phase, currentConceptIndex });
       perform();
     }
   }, [phase, currentConceptIndex, totalConcepts, perform]);
@@ -253,14 +262,9 @@ export default function Stage() {
   const isBrowsing = browsingIndex !== null;
   const browsingEntry = isBrowsing ? history[browsingIndex] : null;
 
-  // Show reasoning during reasoning and reasoning-done phases (or browsing history)
+  // Show reasoning while thinking, while the visitor inspects it, and in browsing mode
   const showReasoning =
-    (!isBrowsing && (
-      phase === "reasoning" ||
-      phase === "reasoning-done" ||
-      (phase === "presenting" && reasoning)
-    )) ||
-    (isBrowsing && browsingEntry?.reasoning);
+    isBrowsing || phase === "reasoning" || phase === "reasoning-done";
 
   const reasoningText = isBrowsing ? (browsingEntry?.reasoning || "") : reasoning;
 
@@ -276,39 +280,11 @@ export default function Stage() {
     : (phase === "presenting" || phase === "awaiting") && !!currentPresentation;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full relative">
-      {/* Reasoning trace — for browsing, show as dimmed header above presentation */}
-      {isBrowsing && browsingEntry?.reasoning && (
-        <div className="absolute top-8 left-0 right-0 flex justify-center z-10 pointer-events-none">
-          <div className="max-w-2xl px-6">
-            <div className="font-mono text-xs leading-relaxed text-ink-faint tracking-wide opacity-50">
-              {browsingEntry.reasoning}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reasoning phase — stays visible through reasoning-done, fades during presenting */}
-      {!isBrowsing && showReasoning && (
-        <div
-          className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
-            phase === "presenting" ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-        >
-          <ReasoningTrace
-            text={reasoningText}
-            isActive={phase === "reasoning" || phase === "reasoning-done"}
-          />
-        </div>
-      )}
-
-      {/* Presentation — current or historical */}
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       {showPresentation && displayPresentation && (
         <div
           className={`absolute inset-0 transition-opacity duration-500 ${
-            isBrowsing || phase === "presenting" || phase === "awaiting"
-              ? "opacity-100"
-              : "opacity-0"
+            isBrowsing || phase === "presenting" || phase === "awaiting" ? "opacity-100" : "opacity-0"
           }`}
         >
           <ToolRenderer
@@ -320,22 +296,45 @@ export default function Stage() {
         </div>
       )}
 
+      {/* Reasoning trace sits bottom center and can collapse in history */}
+      {showReasoning && (
+        <div className="absolute left-1/2 bottom-24 z-20 w-full -translate-x-1/2 px-6 text-center">
+          <div
+            className={`mx-auto w-fit transition-all duration-500 ${
+              isBrowsing
+                ? "opacity-90"
+                : phase === "presenting"
+                  ? "opacity-0 pointer-events-none"
+                  : "opacity-100"
+            }`}
+          >
+            <ReasoningTrace
+              text={reasoningText}
+              isActive={phase === "reasoning"}
+              collapsed={isBrowsing}
+            />
+          </div>
+          {phase === "reasoning" && <ThinkingDots />}
+        </div>
+      )}
+
       {/* Navigation controls — centered bottom, context-dependent */}
       <NavigationControls />
 
       {/* Error state */}
       {phase === "error" && !isBrowsing && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-surface/60 backdrop-blur-sm">
           <p className="text-ink-muted font-mono text-sm">{errorMessage}</p>
           <button
-            onClick={() => { clearError(); }}
+            onClick={() => {
+              clearError();
+            }}
             className="px-4 py-2 text-xs font-mono text-ink-muted hover:text-ink border border-stone-300 rounded-lg transition-colors cursor-pointer"
           >
             try again
           </button>
         </div>
       )}
-
     </div>
   );
 }

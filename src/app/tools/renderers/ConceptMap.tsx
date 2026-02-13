@@ -10,25 +10,23 @@ interface Props {
 
 export default function ConceptMap({ props, onReady }: Props) {
   const { nodes, edges, centerNode } = props as ConceptMapProps;
-  const [revealed, setRevealed] = useState(false);
+  const [visibleNodeCount, setVisibleNodeCount] = useState(1);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setRevealed(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (revealed && onReady) {
-      const timer = setTimeout(onReady, 1200);
-      return () => clearTimeout(timer);
+    if (visibleNodeCount >= nodes.length && onReady) {
+      onReady();
     }
-  }, [revealed, onReady]);
+  }, [visibleNodeCount, nodes.length, onReady]);
 
   // Position nodes in a circle around the center
   const center = centerNode || nodes[0]?.id;
-  const centerIdx = nodes.findIndex((n) => n.id === center);
+  const centerNodeData = nodes.find((n) => n.id === center);
   const otherNodes = nodes.filter((n) => n.id !== center);
+  const orderedNodes = [
+    centerNodeData || nodes[0],
+    ...otherNodes,
+  ].filter((n): n is NonNullable<typeof centerNodeData> => Boolean(n));
 
   const radius = Math.min(280, 35 * otherNodes.length);
   const angleStep = (2 * Math.PI) / Math.max(otherNodes.length, 1);
@@ -44,6 +42,9 @@ export default function ConceptMap({ props, onReady }: Props) {
     };
   });
 
+  const visibleNodeIds = new Set(
+    orderedNodes.slice(0, Math.min(visibleNodeCount, orderedNodes.length)).map((n) => n.id)
+  );
   const hoveredDesc = hoveredNode
     ? nodes.find((n) => n.id === hoveredNode)?.description
     : null;
@@ -72,9 +73,9 @@ export default function ConceptMap({ props, onReady }: Props) {
                   stroke="#d6d3d1"
                   strokeWidth="0.3"
                   className={`transition-all duration-700 ${
-                    revealed ? "opacity-100" : "opacity-0"
+                    visibleNodeCount > i ? "opacity-100" : "opacity-0"
                   }`}
-                  style={{ transitionDelay: `${300 + i * 100}ms` }}
+                  style={{ transitionDelay: `${120 + i * 120}ms` }}
                 />
                 {edge.label && (
                   <text
@@ -82,9 +83,9 @@ export default function ConceptMap({ props, onReady }: Props) {
                     y={(from.y + to.y) / 2 - 1.5}
                     textAnchor="middle"
                     className={`fill-stone-400 transition-opacity duration-500 ${
-                      revealed ? "opacity-100" : "opacity-0"
+                      visibleNodeCount > i ? "opacity-100" : "opacity-0"
                     }`}
-                    style={{ fontSize: "2.5px", transitionDelay: `${500 + i * 100}ms` }}
+                    style={{ fontSize: "2.5px", transitionDelay: `${240 + i * 120}ms` }}
                   >
                     {edge.label}
                   </text>
@@ -99,13 +100,14 @@ export default function ConceptMap({ props, onReady }: Props) {
           const pos = positions[node.id];
           if (!pos) return null;
           const isCenter = node.id === center;
-          const delay = isCenter ? 0 : 200 + i * 150;
+          const delay = isCenter ? 0 : 180 + i * 140;
+          const isVisible = visibleNodeIds.has(node.id);
 
           return (
             <div
               key={node.id}
               className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 cursor-default ${
-                revealed ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                isVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
               }`}
               style={{
                 left: `${pos.x}%`,
@@ -128,12 +130,20 @@ export default function ConceptMap({ props, onReady }: Props) {
           );
         })}
 
-        {/* Hover description */}
         {hoveredDesc && (
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full mt-4 max-w-sm text-center text-sm text-ink-muted font-mono px-4 py-2">
             {hoveredDesc}
           </div>
         )}
+
+        {visibleNodeCount < nodes.length ? (
+          <button
+            onClick={() => setVisibleNodeCount((count) => Math.min(count + 1, nodes.length))}
+            className="absolute bottom-12 left-1/2 -translate-x-1/2 text-sm font-mono text-ink-faint hover:text-ink transition-colors duration-200"
+          >
+            reveal next node ({visibleNodeCount}/{nodes.length})
+          </button>
+        ) : null}
       </div>
     </div>
   );

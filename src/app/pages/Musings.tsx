@@ -1,4 +1,4 @@
-export default function Projects() {
+export default function Musings() {
   return (
     <div className="min-h-screen bg-surface">
       <div className="max-w-2xl mx-auto px-6 py-16">
@@ -8,7 +8,7 @@ export default function Projects() {
           </a>
         </header>
 
-        <h1 className="text-2xl font-medium text-ink mb-8">Projects</h1>
+        <h1 className="text-2xl font-medium text-ink mb-8">Musings</h1>
 
         <div className="space-y-8">
           <div className="border-l-2 border-stone-200 pl-4">

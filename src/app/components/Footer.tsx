@@ -11,9 +11,18 @@ export default function Footer({ visible }: FooterProps) {
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
-      <p className="text-[10px] font-mono text-ink-faint">
-        built with curiosity
-      </p>
+      <div className="flex flex-wrap items-center gap-4 text-[10px] font-mono text-ink-faint">
+        <span className="text-ink-faint">built with curiosity</span>
+        <a href="/about" className="hover:text-ink transition-colors">
+          About George
+        </a>
+        <a href="/musings" className="hover:text-ink transition-colors">
+          Musings
+        </a>
+        <a href="/contact" className="hover:text-ink transition-colors">
+          Contact George
+        </a>
+      </div>
     </footer>
   );
 }
