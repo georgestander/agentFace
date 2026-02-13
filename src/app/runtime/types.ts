@@ -95,6 +95,7 @@ export interface SessionStartRequest {
 
 export interface SessionStartResponse {
   sessionId: string;
+  model: string;
   totalConcepts: number;
   cacheVersion: string;
   startedAt: string;
@@ -106,16 +107,6 @@ export interface SessionStepRequest {
   mode: "interactive" | "prefetch";
   priorSteps: number[];
   usedTools: string[];
-}
-
-export interface SessionPrefetchRequest {
-  sessionId: string;
-  fromStep: number;
-  toStep: number;
-}
-
-export interface SessionPrefetchResponse {
-  queued: number[];
 }
 
 // ---------------------------------------------------------------------------

@@ -31,6 +31,7 @@ export async function sessionStartHandler({ request }: { request: Request }) {
 
   const response: SessionStartResponse = {
     sessionId,
+    model,
     totalConcepts: CONCEPTS.length,
     cacheVersion,
     startedAt: new Date().toISOString(),
@@ -324,29 +325,6 @@ export async function sessionStepHandler({ request }: { request: Request }) {
     console.error("[session/step] Error:", err);
     return sseError("Failed to reach AI service");
   }
-}
-
-// ---------------------------------------------------------------------------
-// POST /api/session/prefetch
-// ---------------------------------------------------------------------------
-
-export async function sessionPrefetchHandler({ request }: { request: Request }) {
-  let body: { sessionId: string; fromStep: number; toStep: number };
-  try {
-    body = await request.json();
-  } catch {
-    return jsonError("Invalid JSON", 400);
-  }
-
-  const { fromStep, toStep } = body;
-  const queued: number[] = [];
-  for (let i = fromStep; i <= toStep && i < CONCEPTS.length; i++) {
-    queued.push(i);
-  }
-
-  return new Response(JSON.stringify({ queued }), {
-    headers: { "Content-Type": "application/json" },
-  });
 }
 
 // ---------------------------------------------------------------------------
