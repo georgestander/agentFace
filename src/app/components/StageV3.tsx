@@ -72,8 +72,12 @@ export default function StageV3({ session }: StageV3Props) {
     session.phase === "reasoning-done" ||
     isBrowsing;
 
-  // Step tokens from current packet
-  const stepTokens = session.currentPacket?.tokenUsage?.completionTokens;
+  // Step tokens: finalized from packet, or provisional estimate during streaming
+  // Rough heuristic: ~4 characters per token for English text
+  const stepTokens = session.currentPacket?.tokenUsage?.completionTokens
+    ?? (isStreaming && reasoningText.length > 0
+      ? Math.round(reasoningText.length / 4)
+      : undefined);
 
   // Determine presentation display
   const displayPresentation = session.currentPacket

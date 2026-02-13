@@ -14,7 +14,7 @@ import { useTokenLedger } from "../runtime/useTokenLedger";
 import StageV3 from "../components/StageV3";
 import ConceptBoxV3 from "../components/ConceptBoxV3";
 import IntroScreenV3 from "../components/IntroScreenV3";
-import FinScreen from "../components/FinScreen";
+import FinScreenV3 from "../components/FinScreenV3";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
@@ -89,7 +89,11 @@ function HomeV3Active() {
       />
 
       {isComplete ? (
-        <FinScreen />
+        <FinScreenV3
+          totalTokens={tokenLedger.totals.totalTokens}
+          averagePerStep={tokenLedger.averagePerStep}
+          stepCount={Object.keys(tokenLedger.byStep).length}
+        />
       ) : (
         <StageV3 session={session} />
       )}
