@@ -158,7 +158,7 @@ export default function ThoughtRail({
   if (!expanded && !isStreaming) {
     if (!text) return null;
     return (
-      <div className="fixed top-4 right-4 z-30 sm:right-auto sm:left-4 sm:top-auto sm:bottom-20">
+      <div className="fixed top-4 right-4 z-30 sm:top-4 sm:right-4">
         <div className="bg-surface/90 backdrop-blur-sm border border-stone-200 rounded px-2.5 py-1.5 max-w-48 cursor-default">
           <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-ink-faint/60 mb-0.5">
             trace

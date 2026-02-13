@@ -29,7 +29,7 @@ export default function ConceptBoxV3({
       : Math.min(currentStep + 2, CONCEPTS.length);
 
   return (
-    <div className="fixed top-6 right-4 z-20 w-[42vw] max-w-56 min-w-28 sm:right-6 sm:w-56">
+    <div className="fixed top-14 left-4 z-20 w-[42vw] max-w-52 min-w-28 sm:left-6 sm:w-52">
       <ul className="space-y-2">
         {CONCEPTS.map((concept, i) => {
           if (i >= maxVisible) return null;
