@@ -12,7 +12,6 @@ import { performHandler } from "@/app/agent/openrouter";
 import {
   sessionStartHandler,
   sessionStepHandler,
-  sessionPrefetchHandler,
 } from "@/app/agent/session-api";
 
 const isV3 = (env as any).EXPERIENCE_V3 === "true";
@@ -29,6 +28,5 @@ export default defineApp([
     route("/api/perform", { post: performHandler }),
     route("/api/session/start", { post: sessionStartHandler }),
     route("/api/session/step", { post: sessionStepHandler }),
-    route("/api/session/prefetch", { post: sessionPrefetchHandler }),
   ]),
 ]);
