@@ -1,9 +1,12 @@
+"use client";
+
 import { CONCEPTS } from "../agent/concepts";
+import AppShell from "../components/AppShell";
 
 export default function Conventional() {
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="max-w-2xl mx-auto px-6 py-16">
+    <AppShell>
+      <div className="max-w-2xl mx-auto px-6 py-16 pt-20">
         {/* Header */}
         <header className="mb-16">
           <h1 className="text-2xl font-medium text-ink">George Stander</h1>
@@ -39,6 +42,6 @@ export default function Conventional() {
           </a>
         </nav>
       </div>
-    </div>
+    </AppShell>
   );
 }

@@ -1,13 +1,11 @@
+"use client";
+
+import AppShell from "../components/AppShell";
+
 export default function About() {
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="max-w-2xl mx-auto px-6 py-16">
-        <header className="mb-12">
-          <a href="/" className="text-xs font-mono text-ink-faint hover:text-ink-muted transition-colors">
-            &larr; back
-          </a>
-        </header>
-
+    <AppShell>
+      <div className="max-w-2xl mx-auto px-6 py-16 pt-20">
         <h1 className="text-2xl font-medium text-ink mb-8">About</h1>
 
         <div className="space-y-6 text-sm text-ink-muted leading-relaxed">
@@ -26,6 +24,6 @@ export default function About() {
           </p>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

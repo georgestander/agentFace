@@ -15,19 +15,16 @@ import StageV3 from "../components/StageV3";
 import ConceptBoxV3 from "../components/ConceptBoxV3";
 import IntroScreenV3 from "../components/IntroScreenV3";
 import FinScreenV3 from "../components/FinScreenV3";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import AppShell from "../components/AppShell";
 
 export default function HomeV3() {
   const [started, setStarted] = useState(false);
 
   if (!started) {
     return (
-      <div className="relative h-screen w-screen overflow-hidden bg-surface">
-        <Header visible />
-        <Footer visible />
+      <AppShell fullScreen>
         <IntroScreenV3 onStart={() => setStarted(true)} />
-      </div>
+      </AppShell>
     );
   }
 
@@ -77,10 +74,7 @@ function HomeV3Active() {
   const isComplete = session.phase === "complete";
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-surface">
-      <Header visible />
-      <Footer visible />
-
+    <AppShell fullScreen>
       <ConceptBoxV3
         currentStep={session.currentStep}
         phase={session.phase}
@@ -104,6 +98,6 @@ function HomeV3Active() {
           {tokenLedger.totals.totalTokens.toLocaleString()} tokens
         </div>
       )}
-    </div>
+    </AppShell>
   );
 }
