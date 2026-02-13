@@ -576,6 +576,49 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
   }, [state.sessionId]);
 
   // ---------------------------------------------------------------------------
+  // Lock watchdog: retry when generating tab dies before broadcasting
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    // Only run when we're waiting on another tab (reasoning but not requesting)
+    if (state.phase !== "reasoning" || isRequesting.current || !state.sessionId) return;
+
+    const POLL_INTERVAL_MS = 5_000;
+    const timer = setInterval(() => {
+      const s = stateRef.current;
+      if (s.phase !== "reasoning" || isRequesting.current) {
+        clearInterval(timer);
+        return;
+      }
+
+      // Check if a packet appeared in cache (other tab wrote to localStorage)
+      const cached = getPacket(s.currentStep);
+      if (cached) {
+        clearInterval(timer);
+        packetsRef.current[s.currentStep] = cached;
+        setState((prev) => ({
+          ...prev,
+          currentPacket: cached,
+          thoughtDelta: cached.thoughtFull,
+          phase: "reasoning-done",
+        }));
+        return;
+      }
+
+      // Check if the lock expired — if so, retry the step request
+      if (acquireLock(s.sessionId, s.currentStep)) {
+        // We got the lock — the original tab must have died
+        releaseStepLock(s.sessionId, s.currentStep);
+        clearInterval(timer);
+        // Transition to idle to trigger auto-request
+        setState((prev) => ({ ...prev, phase: "idle" }));
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, [state.phase, state.sessionId, state.currentStep]);
+
+  // ---------------------------------------------------------------------------
   // Cleanup
   // ---------------------------------------------------------------------------
 
