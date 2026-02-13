@@ -24,28 +24,28 @@ Create a responsive performer flow with concise reasoning, staged transitions, m
 - [x] Routing for conventional/alternate pages.
 
 ### Phase 3: Reasoning Compactness
-**Status:** active
+**Status:** done
 **Plan:** docs/plans/terminal-ux-no-jump-plan.md
 
 - [x] Add explicit reasoning output limit to one brief sentence.
 - [x] Replace dominant full-screen reasoning with compact UI.
-- [~] Implement always-visible collapsible reasoning dropdown with terminal affordance.
-- [ ] Add complete non-redundant transition animation choreography.
+- [x] Implement always-visible collapsible reasoning dropdown with terminal affordance.
+- [x] Add complete non-redundant transition sequencing between phases.
 
 ### Phase 4: Tool Variety and Manual Progression
-**Status:** upcoming
+**Status:** done
 **Plan:** docs/plans/terminal-ux-no-jump-plan.md
 
-- [ ] Add tool-use anti-repetition context from session history.
-- [ ] Remove automatic carousel-like jumps from presenters.
-- [ ] Validate distinct stage render outputs under constrained templates.
+- [x] Add tool-use anti-repetition context from session history.
+- [x] Remove automatic carousel-like jumps from presenters.
+- [x] Validate distinct stage render outputs under constrained templates.
 
 ### Phase 5: Responsive Finalization
-**Status:** upcoming
+**Status:** done
 **Plan:** docs/plans/terminal-ux-no-jump-plan.md
 
-- [ ] Finish responsive review for all pages in terminal palette.
-- [ ] Verify /about, /musings, /contact behavior and links.
+- [x] Finish responsive review for all pages in terminal palette.
+- [x] Verify /about, /musings, /contact behavior and links.
 
 ## Decisions
 - Use a monochrome terminal direction to avoid purple-themed ambiguity and match user preference.
@@ -62,5 +62,5 @@ Create a responsive performer flow with concise reasoning, staged transitions, m
 | Foundation Recovery | 2026-02-13T08:58:22Z |
 | UX Shell and Navigation | 2026-02-13T08:58:22Z |
 | Reasoning Compactness | 2026-02-13T08:58:22Z |
-| Tool Variety and Manual Progression | 2026-02-13T08:58:22Z |
+| Tool Variety and Manual Progression | 2026-02-13T12:00:00Z |
 | Responsive Finalization | 2026-02-13T08:58:22Z |

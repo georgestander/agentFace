@@ -103,3 +103,40 @@ The performer flow is functional but still feels abrupt and generic. We need a p
 ## Out of Scope for this pass
 - Rewriting tool renderers for content quality unless required for manual controls.
 - New backend/model capability beyond compatible OpenRouter tool-calling models.
+
+## Scenario Coverage Matrix
+
+### S0 — Intro and Chrome
+- **Scenario:** Load `/` and observe intro, header, footer.
+- **Acceptance checks:** intro appears with typed text, "yes, show me" and "no, just show me the site" appear; header visible top-left; footer visible bottom with links.
+- **Validation:** `pnpm dev`, open `/`; manual verification in browser.
+
+### S1 — Reasoning + Show Me
+- **Scenario:** Initial concept performs from idle and returns to reasoning-done.
+- **Acceptance checks:** phase is `reasoning` with always-visible dropdown + animated dots; tool response lands in `reasoning-done`; reasoning panel can collapse/expand; "show me →" appears.
+- **Validation:** `pnpm dev`, trigger first assistant turn; confirm UI sequence.
+
+### S2 — Present + Completion Controls
+- **Scenario:** User accepts show-me and tool renders.
+- **Acceptance checks:** presenter appears without jumping; `next →` is available only in `awaiting`.
+- **Validation:** manual flow on `/` while not in intro.
+
+### S3 — Manual Renderer Progression
+- **Scenario:** Model uses `narrative_sequence` and `concept_map`.
+- **Acceptance checks:** no automatic beat/node auto-advance without interaction; "next beat", "show conclusion", "reveal next node" control each step.
+- **Validation:** manual interaction with synthetic renderer payloads during dev.
+
+### S4 — Tool Variety / Recovery
+- **Scenario:** Tool reuse attempted by model; API incompatibilities.
+- **Acceptance checks:** prompt includes `usedTools`; tool repeats reduced; if `tool_choice`/`parallel_tool_calls` unsupported, fallback request succeeds.
+- **Validation:** `performHandler` path testing with simulated 400 responses containing failure patterns (`tool_choice`, `parallel_tool_calls`).
+
+### S5 — Browsing History
+- **Scenario:** After at least one concept, open previous entries.
+- **Acceptance checks:** older renderings are accessible, reasoning collapses in history by default, `← back` / `next →` controls are available, and concept list entries can jump to history.
+- **Validation:** manual verification after advancing a few concepts.
+
+### S6 — Routing + Responsive Pages
+- **Scenario:** Navigate `/about`, `/musings`, `/contact`, `/conventional`, `/projects`.
+- **Acceptance checks:** each route renders at all viewport tiers without horizontal overflow; footer links remain readable; header links function.
+- **Validation:** `pnpm dev` + route smoke checks (`/`, `/conventional`, `/about`, `/musings`, `/contact`, `/projects`) at narrow/medium/desktop sizes.
