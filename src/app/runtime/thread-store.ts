@@ -135,15 +135,18 @@ export function isInflight(stepIndex: number): boolean {
 
 /**
  * Store a completed packet and persist to localStorage.
+ * If the step was already stored, replaces the packet but does NOT
+ * re-add token usage to totals (prevents overcounting).
  */
 export function storePacket(packet: StepPacket): void {
   if (!_state) return;
 
+  const alreadyStored = !!_state.packetsByStep[packet.stepIndex];
   _state.packetsByStep[packet.stepIndex] = packet;
   delete _state.inflightByStep[packet.stepIndex];
 
-  // Update running totals
-  if (packet.tokenUsage) {
+  // Only add to running totals for NEW steps (not re-stores)
+  if (!alreadyStored && packet.tokenUsage) {
     _state.totals = {
       promptTokens: _state.totals.promptTokens + packet.tokenUsage.promptTokens,
       completionTokens:

@@ -7,7 +7,7 @@
  * StageV3, ConceptBoxV3. Manages prefetch and token telemetry.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useShowSession } from "../runtime/useShowSession";
 import { useStepPrefetch } from "../runtime/useStepPrefetch";
 import { useTokenLedger } from "../runtime/useTokenLedger";
@@ -59,15 +59,20 @@ function HomeV3Active() {
     enabled: prefetchEnabled && !!session.currentPacket,
   });
 
-  // Record token usage when a packet arrives
+  // Record token usage when a NEW packet arrives (not on browse transitions).
+  // Track which steps have been recorded to avoid double-counting.
+  const recordedStepsRef = useRef<Set<number>>(new Set());
   useEffect(() => {
-    if (session.currentPacket?.tokenUsage) {
-      tokenLedger.record(
-        session.currentPacket.stepIndex,
-        session.currentPacket.tokenUsage
-      );
+    const packet = session.currentPacket;
+    if (
+      packet?.tokenUsage &&
+      session.browsingIndex === null &&
+      !recordedStepsRef.current.has(packet.stepIndex)
+    ) {
+      recordedStepsRef.current.add(packet.stepIndex);
+      tokenLedger.record(packet.stepIndex, packet.tokenUsage);
     }
-  }, [session.currentPacket]);
+  }, [session.currentPacket, session.browsingIndex]);
 
   const isComplete = session.phase === "complete";
 
