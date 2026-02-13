@@ -30,9 +30,16 @@ export default function Stage() {
   const isPerforming = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use refs for values that perform() needs so the callback
+  // doesn't go stale across state transitions
+  const historyRef = useRef(history);
+  const conceptIndexRef = useRef(currentConceptIndex);
+  historyRef.current = history;
+  conceptIndexRef.current = currentConceptIndex;
+
   /**
    * Trigger the agent to perform the current concept.
-   * Sends the API request, reads the SSE stream, and updates state.
+   * Reads from refs to always get the latest state values.
    */
   const perform = useCallback(async () => {
     if (isPerforming.current) return;
@@ -41,9 +48,13 @@ export default function Stage() {
     startReasoning();
 
     try {
+      // Read latest values from refs
+      const currentHistory = historyRef.current;
+      const currentIndex = conceptIndexRef.current;
+
       // Build message history from previous turns
       const messages: Array<Record<string, unknown>> = [];
-      for (const entry of history) {
+      for (const entry of currentHistory) {
         // Assistant turn with tool call
         messages.push({
           role: "assistant",
@@ -72,7 +83,7 @@ export default function Stage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages,
-          conceptIndex: currentConceptIndex,
+          conceptIndex: currentIndex,
         }),
       });
 
@@ -123,7 +134,7 @@ export default function Stage() {
     } finally {
       isPerforming.current = false;
     }
-  }, [currentConceptIndex, history, startReasoning, updateReasoning, present]);
+  }, [startReasoning, updateReasoning, present]);
 
   // Auto-trigger performance when phase becomes idle (and we have concepts left)
   useEffect(() => {
