@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Agent Face is a conversational AI portfolio for George Stander. It's a React app on Cloudflare Workers (via RedwoodSDK) that uses OpenRouter to power an agent that talks to visitors and dynamically renders UI components (`json:ui` blocks) to showcase George's work and find him a mentor.
+Agent Face is an autonomous AI performer for George Stander's portfolio. An agent reads George's concepts, reasons visibly about how to present each one, then chooses from a set of presentation tools to render it on a canvas. Visitors watch the agent think and perform, then advance to the next concept.
+
+Light, minimalist aesthetic. Not a chatbot — a performer.
 
 ## Commands
 
@@ -15,48 +17,69 @@ pnpm release      # Build + deploy to Cloudflare Workers
 pnpm generate     # Regenerate Cloudflare Worker types
 ```
 
-No automated test suite exists. Verify changes with `pnpm build` + manual smoke test (`pnpm dev` → send message → confirm streaming + UI blocks render).
+No automated test suite. Verify with `pnpm build` + manual smoke test in `pnpm dev`.
 
 ## Architecture
 
 **Runtime:** Cloudflare Workers + RedwoodSDK + React 19 + TypeScript (strict)
-**Styling:** Tailwind CSS via CDN (configured inline in `Document.tsx`)
-**AI:** OpenRouter API (default model: `anthropic/claude-sonnet-4`)
+**Styling:** Tailwind CSS via CDN (light theme, configured in `Document.tsx`)
+**AI:** OpenRouter API with function calling (default model: `anthropic/claude-sonnet-4`)
 
-### Request Flow
+### Performance Flow
 
-1. `src/worker.tsx` — Routes: `/` renders Home, `POST /api/chat` hits `chatHandler`
-2. `src/app/agent/openrouter.ts` — Prepends system prompt, forwards to OpenRouter with `stream: true`, pipes SSE back
-3. `src/app/components/Chat.tsx` — Reads SSE stream, accumulates text, on stream end calls `parseResponse()`
-4. `src/app/agent/parse-response.ts` — Splits response into text segments and `json:ui` fenced blocks, validates JSON against Zod schemas
-5. `src/app/components/ChatBubble.tsx` → `UIBlock.tsx` — Renders segments, routing UI blocks to catalog components
+```
+Page loads → Agent reads concept → Reasons visibly (SSE streamed text)
+  → Calls a presentation tool → Tool renders on canvas → Stops
+  → Visitor hits "next" → Agent picks next concept + tool → Repeat
+```
+
+### Two API Routes
+
+- `POST /api/perform` — The performer endpoint. Sends concepts + tool definitions to OpenRouter with `tool_choice: "required"`. Streams back reasoning (content) + tool calls (function calling).
+- `POST /api/chat` — Legacy chatbot endpoint (kept for backward compat during migration).
+
+### Tool System
+
+Tools live in `src/app/tools/`. Each tool has two halves:
+
+1. **Definition** (`tools/definitions/*.ts`) — Zod schema for validation + OpenAI function schema sent to the model
+2. **Renderer** (`tools/renderers/*.tsx`) — React component that renders the tool's output
+
+The registry (`tools/registry.ts`) collects all tools and exports them in OpenRouter's format. The renderer index (`tools/renderers/index.ts`) maps tool names to React components.
+
+**Available tools:** `typography_display`, `narrative_sequence`, `concept_map`, `reveal_sequence`, `marginalia`, `comparison`
+
+### SSE Stream Parsing
+
+`src/app/agent/parse-stream.ts` handles OpenRouter's streaming format for tool calling:
+- `delta.content` → reasoning text (shown to visitor in real-time)
+- `delta.tool_calls` → tool name + arguments (accumulated as partial JSON fragments, validated after `[DONE]`)
+
+This replaces the old `parse-response.ts` regex-based approach.
+
+### State Machine
+
+`src/app/context/PerformanceContext.tsx` manages: `idle → reasoning → presenting → awaiting → idle → ...`
 
 ### Key Directories
 
-- `src/app/agent/` — Server-side: OpenRouter proxy, system prompt builder, response parser, project knowledge base
-- `src/app/catalog/` — Zod schemas (`catalog.ts`) defining all UI block types + their React component implementations
-- `src/app/components/` — Chat UI: message display, streaming state, UI block router
-- `src/app/context/` — React Context for choice button callbacks
+- `src/app/tools/definitions/` — Tool schemas (Zod + OpenAI function defs)
+- `src/app/tools/renderers/` — Tool React components
+- `src/app/agent/` — Server-side: OpenRouter handler, system prompt, concepts data, stream parser
+- `src/app/components/` — Stage (main canvas), ConceptBox (top-right), ReasoningTrace, ToolRenderer
 
-### The json:ui System
+### Multi-Turn Conversation Format
 
-The agent outputs mixed text and fenced JSON blocks like:
+Each turn in the performance requires proper OpenRouter tool calling format:
+1. Assistant message with `content` (reasoning) + `tool_calls` array
+2. Tool result message with `role: "tool"` and matching `tool_call_id`
+3. Next user/system message to continue
 
-```
-Some text here
+The Stage component reconstructs this from its history when requesting the next concept.
 
-\```json:ui
-{ "type": "ProjectCard", "props": { "title": "...", ... } }
-\```
-```
+### Concepts
 
-`parseResponse()` splits these into `Segment[]` (text | ui). UI segments are Zod-validated against `UIBlockSchema` (discriminated union on `type`). Failed validation falls back to rendering as text.
-
-**Current UI block types:** `Prose`, `ChoiceButtons`, `ProjectCard`, `ProjectGrid` (contains ProjectCard children)
-
-### Message History
-
-`Chat.tsx` reconstructs raw message format when sending to the API — text segments become plain text, UI segments get re-wrapped in `json:ui` fences. This preserves full conversation context across turns.
+`src/app/agent/concepts.ts` — Array of `Concept` objects (id, bullet, elaboration, themes). The bullet is shown in the ConceptBox UI. The full concept is injected into the system prompt for the agent to reason about.
 
 ## Conventions
 
@@ -67,11 +90,23 @@ Some text here
 - Validate all model output with Zod before rendering
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`)
 
+## Adding a New Tool
+
+1. Create `src/app/tools/definitions/my-tool.ts` — export Zod schema + `ToolDefinition`
+2. Create `src/app/tools/renderers/MyTool.tsx` — React component with `{ props: unknown; onReady?: () => void }`
+3. Register in `tools/registry.ts` and `tools/renderers/index.ts`
+4. The agent will see the new tool via OpenRouter's function calling and can choose to use it
+
 ## Environment
 
 - `OPENROUTER_API_KEY` (required) — set in `.dev.vars` locally, `wrangler secret put` for prod
 - `AI_MODEL` (optional) — override in `wrangler.jsonc`, defaults to `anthropic/claude-sonnet-4`
 
-## Agent Personality Notes
+## Agent Behavior
 
-The system prompt (`system-prompt.ts`) defines the agent as George's representative — warm, direct, curious. It should never say "I'm an AI." It uses ChoiceButtons instead of prose questions, renders ProjectCards for projects, and keeps responses concise. The goal is helping visitors understand George and connecting him with a mentor.
+The system prompt (`system-prompt.ts`) tells the agent to:
+- Think aloud (1-3 sentences of reasoning, visible to visitor)
+- Call exactly one tool per concept
+- Never say "I'm an AI" — it's George's agent
+- Vary tool selection across concepts
+- Two audiences matter: (1) people intrigued by how this was built, (2) potential mentors — but the agent doesn't say that explicitly
