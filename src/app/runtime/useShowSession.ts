@@ -38,6 +38,7 @@ import {
   destroyTabSync,
 } from "./tab-sync";
 import { buildSeed, deriveMood, deriveIntent } from "./seed";
+import { UI_MOODS, type UiMood } from "./types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -350,17 +351,31 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
         throw new Error("No packet received from step endpoint");
       }
 
-      // Enrich packet with client-derived mood/intent and usage
+      // Enrich packet: prefer model-provided metadata, fallback to seed
       const concept = CONCEPTS[stepIndex];
       const seed = buildSeed(s.sessionId, stepIndex, concept.id, PROMPT_VERSION, s.model);
       const previousMood = stepIndex > 0 ? packetsRef.current[stepIndex - 1]?.uiMood : undefined;
+      const seedMood = deriveMood(seed, previousMood);
+      const seedIntent = deriveIntent(seed);
+
+      // Validate model-provided mood against known values
+      const modelMood = receivedPacket.uiMood;
+      const validMood = modelMood && (UI_MOODS as readonly string[]).includes(modelMood)
+        ? (modelMood as UiMood)
+        : seedMood;
+
+      // Merge model-provided intent label with seed-derived defaults
+      const modelIntent = receivedPacket.intentSpec;
+      const mergedIntent = modelIntent?.label
+        ? { ...seedIntent, label: modelIntent.label }
+        : seedIntent;
 
       const enrichedPacket: StepPacket = {
         ...receivedPacket,
         thoughtFull: reasoning,
         thoughtShort: reasoning.slice(0, 120),
-        uiMood: receivedPacket.uiMood || deriveMood(seed, previousMood),
-        intentSpec: receivedPacket.intentSpec || deriveIntent(seed),
+        uiMood: validMood,
+        intentSpec: mergedIntent,
         tokenUsage: receivedUsage || receivedPacket.tokenUsage,
       };
 

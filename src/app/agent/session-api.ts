@@ -273,19 +273,28 @@ export async function sessionStepHandler({ request }: { request: Request }) {
             return;
           }
 
+          // Extract optional model-provided metadata hints
+          const modelMood = typeof toolProps._uiMood === "string" ? toolProps._uiMood : null;
+          const modelIntentLabel = typeof toolProps._intentLabel === "string" ? toolProps._intentLabel : null;
+
+          // Remove metadata fields from the tool props passed to renderers
+          const cleanProps = { ...toolProps };
+          delete cleanProps._uiMood;
+          delete cleanProps._intentLabel;
+
           const concept = CONCEPTS[stepIndex];
           const packet = {
             sessionId,
             stepIndex,
             conceptId: concept.id,
             toolName: tc.name,
-            toolProps,
+            toolProps: cleanProps,
             toolCallId: tc.id,
             thoughtShort: reasoning.slice(0, 120),
             thoughtFull: reasoning,
-            // uiMood and intentSpec are client-derived in Phases 1-6
-            uiMood: null,
-            intentSpec: null,
+            // Model-provided metadata (null if not provided; client fills via seed)
+            uiMood: modelMood,
+            intentSpec: modelIntentLabel ? { label: modelIntentLabel } : null,
             tokenUsage: null,
             createdAt: new Date().toISOString(),
           };
