@@ -14,8 +14,9 @@ import {
   sessionStartHandler,
   sessionStepHandler,
 } from "@/app/agent/session-api";
+import { introHandler } from "@/app/agent/intro-api";
 
-const isV3 = (env as any).EXPERIENCE_V3 === "true";
+const isV3 = (env as any).EXPERIENCE_V3 !== "false";
 const HomePage = isV3 ? HomeV3 : Home;
 
 export default defineApp([
@@ -28,6 +29,7 @@ export default defineApp([
     route("/projects", Musings),
     route("/contact", Contact),
     route("/api/perform", { post: performHandler }),
+    route("/api/intro", { get: introHandler }),
     route("/api/session/start", { post: sessionStartHandler }),
     route("/api/session/step", { post: sessionStepHandler }),
   ]),

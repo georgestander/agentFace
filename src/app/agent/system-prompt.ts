@@ -2,6 +2,108 @@ import { CONCEPTS } from "./concepts";
 import { UI_MOODS } from "../runtime/types";
 import { AGENT_INSTRUCTIONS } from "../content/agent-instructions";
 
+interface IntroCopyOptions {
+  nonce?: string;
+  avoidKey?: string;
+}
+
+export interface IntroCopy {
+  text: string;
+  warning: string;
+  key: string;
+}
+
+const INTRO_ROLE_CLAUSES = [
+  "I am George's agent, not a chatbot",
+  "I am George's agent on performer duty",
+  "You are looking at George's agent in live performance mode",
+  "I am George's agent and I will perform, not chat",
+] as const;
+
+const INTRO_METHOD_CLAUSES = [
+  "I think aloud in one short line, then commit to one tool",
+  "I reason briefly, pick a medium, and execute one move",
+  "I choose one tool per idea and let the format carry the point",
+  "I move concept by concept, then choose a single way to stage it",
+] as const;
+
+const INTRO_VARIANCE_CLAUSES = [
+  "This run should not look like the previous one.",
+  "Expect a different shape this time.",
+  "No two performances should land the same way.",
+  "The style and pacing will shift from run to run.",
+] as const;
+
+const INTRO_WARNING_TEXT =
+  "This could go horribly wrong, and that risk is part of the experiment.";
+
+function fnv1a32(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+function pickIndex(seed: number, length: number, offset = 0): number {
+  if (length <= 0) return 0;
+  const raw = (seed + offset) % length;
+  return raw >= 0 ? raw : raw + length;
+}
+
+function buildPromptAnchor(seed: number): string {
+  const conceptIndex = pickIndex(seed, CONCEPTS.length, 3);
+  const prompt = buildPerformancePrompt(conceptIndex);
+  const marker = 'Present this concept now: "';
+  const markerStart = prompt.indexOf(marker);
+
+  if (markerStart === -1) {
+    return CONCEPTS[conceptIndex]?.bullet || "the next concept";
+  }
+
+  const quoteStart = markerStart + marker.length;
+  const quoteEnd = prompt.indexOf('"', quoteStart);
+  if (quoteEnd <= quoteStart) {
+    return CONCEPTS[conceptIndex]?.bullet || "the next concept";
+  }
+
+  return prompt.slice(quoteStart, quoteEnd);
+}
+
+function composeIntro(seed: number, focusAnchor: string): IntroCopy {
+  const roleIndex = pickIndex(seed, INTRO_ROLE_CLAUSES.length);
+  const methodIndex = pickIndex(seed, INTRO_METHOD_CLAUSES.length, 5);
+  const varianceIndex = pickIndex(seed, INTRO_VARIANCE_CLAUSES.length, 11);
+  const key = `${roleIndex}-${methodIndex}-${varianceIndex}`;
+
+  return {
+    text: `${INTRO_ROLE_CLAUSES[roleIndex]}. ${INTRO_METHOD_CLAUSES[methodIndex]}. ${INTRO_VARIANCE_CLAUSES[varianceIndex]} Focus: "${focusAnchor}".`,
+    warning: INTRO_WARNING_TEXT,
+    key,
+  };
+}
+
+/**
+ * Build dynamic intro copy from system-prompt directives.
+ *
+ * Uses prompt-derived focus text plus seeded phrase rotation so each intro
+ * can vary while remaining aligned with performer rules.
+ */
+export function buildIntroCopy(options: IntroCopyOptions = {}): IntroCopy {
+  const nonce = options.nonce || `${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+  const baseSeed = fnv1a32(nonce);
+  const focusAnchor = buildPromptAnchor(baseSeed);
+  const seed = fnv1a32(`${nonce}:${focusAnchor}`);
+
+  let intro = composeIntro(seed, focusAnchor);
+  if (options.avoidKey && intro.key === options.avoidKey) {
+    intro = composeIntro(seed + 1, focusAnchor);
+  }
+
+  return intro;
+}
+
 /**
  * Build the system prompt for the agent performer.
  *

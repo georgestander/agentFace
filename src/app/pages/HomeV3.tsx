@@ -7,15 +7,13 @@
  * StageV3, ConceptBoxV3. Manages prefetch and token telemetry.
  */
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useShowSession } from "../runtime/useShowSession";
 import { useStepPrefetch } from "../runtime/useStepPrefetch";
 import { useTokenLedger } from "../runtime/useTokenLedger";
-import { buildSeed, deriveBackground } from "../runtime/seed";
-import { PROMPT_VERSION, type TokenUsage } from "../runtime/types";
+import type { TokenUsage } from "../runtime/types";
 import { getSnapshot } from "../runtime/thread-store";
 import { loadActiveSession, loadSession } from "../runtime/session-store";
-import { CONCEPTS } from "../agent/concepts";
 import StageV3 from "../components/StageV3";
 import ConceptBoxV3 from "../components/ConceptBoxV3";
 import IntroScreenV3 from "../components/IntroScreenV3";
@@ -49,7 +47,7 @@ export default function HomeV3() {
 
   if (!started) {
     return (
-      <AppShell fullScreen>
+      <AppShell fullScreen backdrop="scanline">
         <IntroScreenV3 onStart={() => setStarted(true)} />
       </AppShell>
     );
@@ -117,12 +115,7 @@ function HomeV3Active() {
     }
   }, [session.currentPacket, session.browsingIndex]);
 
-  // Session-level backdrop variant
-  const backdrop = useMemo(() => {
-    if (!session.sessionId || !session.model) return "grain" as const;
-    const seed = buildSeed(session.sessionId, 0, CONCEPTS[0].id, PROMPT_VERSION, session.model);
-    return deriveBackground(seed);
-  }, [session.sessionId, session.model]);
+  const backdrop = "scanline" as const;
 
   const isComplete = session.phase === "complete";
 
