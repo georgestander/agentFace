@@ -3,6 +3,7 @@ title: Agent Face
 date: 2026-02-11
 type: project
 summary: This site is the portfolio piece itself. The medium demonstrates the message.
+link_repo: https://github.com/georgestander/agentFace
 ---
 
 Agent Face is not a case study page about ideas. It is the ideas, running.

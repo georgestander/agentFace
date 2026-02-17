@@ -87,6 +87,9 @@ title: WorkspaceOS
 date: 2026-02-17
 type: project
 summary: One-line summary shown on the index.
+# Optional links rendered on the detail page:
+# link_repo: https://github.com/you/workspaceos
+# link_demo: https://workspaceos.example.com
 ---
 
 Longer body copy in markdown.

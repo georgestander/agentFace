@@ -8,6 +8,10 @@ interface MusingEntryProps {
   slug: string;
 }
 
+function isExternalHref(href: string): boolean {
+  return href.startsWith("http://") || href.startsWith("https://");
+}
+
 export default function MusingEntry({ slug }: MusingEntryProps) {
   const entry = getMusingBySlug(slug);
 
@@ -43,6 +47,24 @@ export default function MusingEntry({ slug }: MusingEntryProps) {
           <p className="text-sm text-ink-muted leading-relaxed">
             {entry.summary}
           </p>
+          {entry.links.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {entry.links.map((link) => {
+                const external = isExternalHref(link.href);
+                return (
+                  <a
+                    key={`${link.label}-${link.href}`}
+                    href={link.href}
+                    target={external ? "_blank" : undefined}
+                    rel={external ? "noreferrer noopener" : undefined}
+                    className="inline-flex rounded-sm border border-stone-300 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-faint hover:border-stone-500 hover:text-ink transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </header>
 
         <StreamedCopy blocks={entry.blocks} />
@@ -57,4 +79,3 @@ export default function MusingEntry({ slug }: MusingEntryProps) {
     </StaticPageLayout>
   );
 }
-
