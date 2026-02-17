@@ -7,6 +7,7 @@ import HomeV3 from "@/app/pages/HomeV3";
 import Conventional from "@/app/pages/Conventional";
 import About from "@/app/pages/About";
 import Musings from "@/app/pages/Musings";
+import MusingEntry from "@/app/pages/MusingEntry";
 import Contact from "@/app/pages/Contact";
 import { performHandler } from "@/app/agent/openrouter";
 import {
@@ -23,6 +24,7 @@ export default defineApp([
     route("/conventional", Conventional),
     route("/about", About),
     route("/musings", Musings),
+    route("/musings/:slug", ({ params }) => <MusingEntry slug={params.slug} />),
     route("/projects", Musings),
     route("/contact", Contact),
     route("/api/perform", { post: performHandler }),
