@@ -6,6 +6,7 @@ import type { MarginaliaProps } from "../definitions/marginalia";
 interface Props {
   props: unknown;
   onReady?: () => void;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 const toneMarker: Record<string, string> = {

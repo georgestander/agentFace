@@ -6,6 +6,7 @@ import type { ConceptMapProps } from "../definitions/concept-map";
 interface Props {
   props: unknown;
   onReady?: () => void;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 export default function ConceptMap({ props, onReady }: Props) {

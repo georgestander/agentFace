@@ -30,6 +30,8 @@ interface ThoughtRailProps {
   style: ThoughtStyle;
   /** Per-step token count (shown when available) */
   stepTokens?: number;
+  /** Active model used for this session step */
+  model?: string;
 }
 
 function clampShort(text: string): string {
@@ -134,6 +136,7 @@ export default function ThoughtRail({
   expanded,
   style,
   stepTokens,
+  model,
 }: ThoughtRailProps) {
   const [showFull, setShowFull] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -153,6 +156,12 @@ export default function ThoughtRail({
   const displayText = showFull ? text : (shortText || clampShort(text));
   const hasMore = text.length > (shortText || clampShort(text)).length;
   const StyleRenderer = STYLE_RENDERERS[style] || PulseLineContent;
+  const thinkingLabelClass = isStreaming ? "text-[#b42318]" : "text-accent";
+  const thinkingDotClass = isStreaming ? "bg-[#b42318]" : "bg-accent";
+  const tokenClass = isStreaming
+    ? "font-mono text-[9px] tabular-nums text-[#b42318]/85 animate-pulse motion-reduce:animate-none"
+    : "font-mono text-[9px] tabular-nums text-ink-faint/50";
+  const modelLabel = model || "unknown-model";
 
   // Compact chip (non-reasoning phases)
   if (!expanded && !isStreaming) {
@@ -180,18 +189,23 @@ export default function ThoughtRail({
           {/* Header */}
           <div className="px-3 py-2 flex items-center justify-between border-b border-stone-100">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] tracking-[0.15em] uppercase text-accent">
+              <span className={`font-mono text-[9px] tracking-[0.15em] uppercase ${thinkingLabelClass}`}>
                 {isStreaming ? "thinking" : "thought"}
               </span>
               {isStreaming && (
-                <span className="inline-block w-1 h-1 rounded-full bg-accent animate-pulse" />
+                <span className={`inline-block w-1 h-1 rounded-full animate-pulse motion-reduce:animate-none ${thinkingDotClass}`} />
               )}
             </div>
-            {stepTokens != null && stepTokens > 0 && (
-              <span className="font-mono text-[9px] text-ink-faint/50">
-                {stepTokens.toLocaleString()}t
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[9px] text-ink-faint/55 truncate max-w-[110px]" title={modelLabel}>
+                {modelLabel}
               </span>
-            )}
+              {stepTokens != null && stepTokens > 0 && (
+                <span className={tokenClass}>
+                  {stepTokens.toLocaleString()}t
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Body */}
@@ -222,18 +236,23 @@ export default function ThoughtRail({
         <div className="bg-surface/95 backdrop-blur-sm border border-stone-200 rounded shadow-sm overflow-hidden">
           <div className="px-3 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] tracking-[0.15em] uppercase text-accent">
+              <span className={`font-mono text-[9px] tracking-[0.15em] uppercase ${thinkingLabelClass}`}>
                 {isStreaming ? "thinking" : "thought"}
               </span>
               {isStreaming && (
-                <span className="inline-block w-1 h-1 rounded-full bg-accent animate-pulse" />
+                <span className={`inline-block w-1 h-1 rounded-full animate-pulse motion-reduce:animate-none ${thinkingDotClass}`} />
               )}
             </div>
-            {stepTokens != null && stepTokens > 0 && (
-              <span className="font-mono text-[9px] text-ink-faint/50">
-                {stepTokens.toLocaleString()}t
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[9px] text-ink-faint/55 truncate max-w-[110px]" title={modelLabel}>
+                {modelLabel}
               </span>
-            )}
+              {stepTokens != null && stepTokens > 0 && (
+                <span className={tokenClass}>
+                  {stepTokens.toLocaleString()}t
+                </span>
+              )}
+            </div>
           </div>
           <div className="px-3 pb-2.5 max-h-24 overflow-y-auto">
             <StyleRenderer text={displayText} isStreaming={isStreaming} />

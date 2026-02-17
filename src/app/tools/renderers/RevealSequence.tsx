@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { RevealSequenceProps } from "../definitions/reveal-sequence";
 
 interface Props {
   props: unknown;
   onReady?: () => void;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 const kindStyles: Record<string, { card: string; text: string }> = {
@@ -23,10 +24,15 @@ const kindStyles: Record<string, { card: string; text: string }> = {
   },
 };
 
-export default function RevealSequence({ props, onReady }: Props) {
+export default function RevealSequence({
+  props,
+  onReady,
+  onInteractionLockChange,
+}: Props) {
   const { layers, title } = props as RevealSequenceProps;
   const [revealedCount, setRevealedCount] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const readyEmittedRef = useRef(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -37,8 +43,18 @@ export default function RevealSequence({ props, onReady }: Props) {
   }, []);
 
   useEffect(() => {
-    if (revealedCount >= layers.length) onReady?.();
+    onInteractionLockChange?.(revealedCount < layers.length);
+  }, [revealedCount, layers.length, onInteractionLockChange]);
+
+  useEffect(() => {
+    if (revealedCount < layers.length || readyEmittedRef.current) return;
+    readyEmittedRef.current = true;
+    onReady?.();
   }, [revealedCount, layers.length, onReady]);
+
+  useEffect(() => {
+    return () => onInteractionLockChange?.(false);
+  }, [onInteractionLockChange]);
 
   const revealNext = () => {
     if (revealedCount < layers.length) {
@@ -105,11 +121,21 @@ export default function RevealSequence({ props, onReady }: Props) {
         {!allRevealed && revealedCount > 0 && (
           <button
             onClick={revealNext}
-            className="mt-6 flex items-center gap-3 group cursor-pointer"
+            className="mt-7 inline-flex items-center gap-3 rounded-md border border-red-300/75 bg-red-50/70 px-3 py-2 text-left shadow-[0_4px_16px_rgba(127,29,29,0.08)] transition-all duration-200 hover:-translate-y-[1px] hover:border-red-500 hover:bg-red-50 hover:shadow-[0_8px_20px_rgba(127,29,29,0.16)] cursor-pointer"
+            aria-label={`Peel back layer ${revealedCount + 1}`}
           >
-            <span className="w-8 h-[1px] bg-stone-300 group-hover:bg-ink-faint transition-colors" />
-            <span className="text-sm font-mono text-ink-faint group-hover:text-ink-muted transition-colors">
+            <span className="relative flex items-center">
+              <span className="w-8 h-[1px] bg-red-500" />
+              <span className="absolute -right-1.5 inline-flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-red-500/55 animate-ping motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-600" />
+              </span>
+            </span>
+            <span className="text-sm font-mono text-red-700 tracking-[0.04em]">
               peel back layer {revealedCount + 1}
+            </span>
+            <span className="text-red-700 text-xs animate-bounce motion-reduce:animate-none">
+              ↓
             </span>
           </button>
         )}

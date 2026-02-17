@@ -255,6 +255,7 @@ interface NavigationControlsV3Props {
   currentStep: number;
   totalConcepts: number;
   browsingIndex: number | null;
+  interactionLocked?: boolean;
   intentSpec: IntentSpec;
   onShowPresentation: () => void;
   onAdvance: () => void;
@@ -267,6 +268,7 @@ export default function NavigationControlsV3({
   currentStep,
   totalConcepts,
   browsingIndex,
+  interactionLocked = false,
   intentSpec,
   onShowPresentation,
   onAdvance,
@@ -274,6 +276,7 @@ export default function NavigationControlsV3({
   onGoForward,
 }: NavigationControlsV3Props) {
   const isBrowsing = browsingIndex !== null;
+  const isBlockedByPresentation = interactionLocked && !isBrowsing;
   const isLastConcept = currentStep >= totalConcepts - 1;
   const canGoBack = isBrowsing ? browsingIndex > 0 : currentStep > 0;
 
@@ -282,7 +285,7 @@ export default function NavigationControlsV3({
     phase === "awaiting" ||
     isBrowsing;
 
-  if (!showControls) return null;
+  if (!showControls || isBlockedByPresentation) return null;
 
   // Determine primary action and its handler
   let primaryAction: () => void;

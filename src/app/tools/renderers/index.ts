@@ -9,7 +9,14 @@ import Comparison from "./Comparison";
 const ConceptMapFlow = lazy(() => import("./ConceptMapFlow"));
 
 /** Map from tool name to its React renderer component */
-export const TOOL_RENDERERS: Record<string, ComponentType<{ props: unknown; onReady?: () => void }>> = {
+export const TOOL_RENDERERS: Record<
+  string,
+  ComponentType<{
+    props: unknown;
+    onReady?: () => void;
+    onInteractionLockChange?: (locked: boolean) => void;
+  }>
+> = {
   typography_display: TypographyDisplay,
   narrative_sequence: NarrativeSequence,
   concept_map: ConceptMapFlow,

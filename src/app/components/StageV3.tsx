@@ -7,7 +7,7 @@
  * rendering, reasoning display, error states, and navigation controls.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import type { ShowSessionState, ShowSessionActions } from "../runtime/useShowSession";
 import ThoughtRail from "./ThoughtRail";
 import ToolRenderer from "./ToolRenderer";
@@ -43,6 +43,7 @@ interface StageV3Props {
 export default function StageV3({ session }: StageV3Props) {
   const isBrowsing = session.browsingIndex !== null;
   const browsingPacket = isBrowsing ? session.currentPacket : null;
+  const [interactionLocked, setInteractionLocked] = useState(false);
 
   // Derive deterministic thought style from seed
   const activeStepIndex = isBrowsing
@@ -106,6 +107,44 @@ export default function StageV3({ session }: StageV3Props) {
     : (session.phase === "presenting" || session.phase === "awaiting") &&
       !!displayPresentation;
 
+  // Default lock for reveal_sequence while a live (non-browsing) presentation is active.
+  // Important: we only auto-lock during "presenting". In "awaiting", the renderer's
+  // callback owns the lock state so the next button appears once all layers are revealed.
+  useEffect(() => {
+    if (isBrowsing) {
+      setInteractionLocked(false);
+      return;
+    }
+
+    const activeTool = session.currentPacket?.toolName;
+    if (activeTool !== "reveal_sequence") {
+      setInteractionLocked(false);
+      return;
+    }
+
+    if (session.phase === "presenting") {
+      setInteractionLocked(true);
+      return;
+    }
+
+    if (session.phase === "reasoning" || session.phase === "reasoning-done") {
+      setInteractionLocked(false);
+    }
+  }, [
+    isBrowsing,
+    session.phase,
+    session.currentStep,
+    session.currentPacket?.toolName,
+  ]);
+
+  const handleInteractionLockChange = useCallback(
+    (locked: boolean) => {
+      if (isBrowsing) return;
+      setInteractionLocked(locked);
+    },
+    [isBrowsing]
+  );
+
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       {showPresentation && displayPresentation && (
@@ -125,6 +164,9 @@ export default function StageV3({ session }: StageV3Props) {
             name={displayPresentation.toolName}
             props={displayPresentation.props}
             onReady={isBrowsing ? undefined : session.finishPresentation}
+            onInteractionLockChange={
+              isBrowsing ? undefined : handleInteractionLockChange
+            }
           />
         </div>
       )}
@@ -136,6 +178,7 @@ export default function StageV3({ session }: StageV3Props) {
         expanded={thoughtExpanded}
         style={thoughtStyle}
         stepTokens={stepTokens}
+        model={session.model}
       />
 
       {/* Navigation controls */}
@@ -144,6 +187,7 @@ export default function StageV3({ session }: StageV3Props) {
         currentStep={session.currentStep}
         totalConcepts={session.totalConcepts}
         browsingIndex={session.browsingIndex}
+        interactionLocked={interactionLocked}
         intentSpec={intentSpec}
         onShowPresentation={session.showPresentation}
         onAdvance={session.advance}

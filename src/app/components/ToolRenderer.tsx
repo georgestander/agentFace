@@ -7,6 +7,7 @@ interface ToolRendererProps {
   name: string;
   props: Record<string, unknown>;
   onReady?: () => void;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 /** Error boundary that catches render failures from tool components. */
@@ -36,7 +37,12 @@ class ToolErrorBoundary extends Component<
   }
 }
 
-export default function ToolRenderer({ name, props, onReady }: ToolRendererProps) {
+export default function ToolRenderer({
+  name,
+  props,
+  onReady,
+  onInteractionLockChange,
+}: ToolRendererProps) {
   const Component = TOOL_RENDERERS[name];
 
   if (!Component) {
@@ -57,7 +63,11 @@ export default function ToolRenderer({ name, props, onReady }: ToolRendererProps
           </div>
         }
       >
-        <Component props={props} onReady={onReady} />
+        <Component
+          props={props}
+          onReady={onReady}
+          onInteractionLockChange={onInteractionLockChange}
+        />
       </Suspense>
     </ToolErrorBoundary>
   );

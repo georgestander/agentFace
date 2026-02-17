@@ -249,14 +249,17 @@ export default function Stage() {
 
   // Safety timeout: if presenting phase stalls (onReady never fires), auto-advance
   useEffect(() => {
-    if (phase === "presenting") {
+    const skipTimeoutForInteractiveReveal =
+      currentPresentation?.toolName === "reveal_sequence";
+
+    if (phase === "presenting" && !skipTimeoutForInteractiveReveal) {
       const timer = setTimeout(() => {
         debugWarn("[Stage] Presenting safety timeout — auto-advancing");
         finishPresentation();
       }, PRESENTING_TIMEOUT_MS);
       return () => clearTimeout(timer);
     }
-  }, [phase, finishPresentation]);
+  }, [phase, finishPresentation, currentPresentation?.toolName]);
 
   // Determine what to display based on browsing state
   const isBrowsing = browsingIndex !== null;

@@ -6,6 +6,7 @@ import type { ComparisonProps } from "../definitions/comparison";
 interface Props {
   props: unknown;
   onReady?: () => void;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 export default function Comparison({ props, onReady }: Props) {

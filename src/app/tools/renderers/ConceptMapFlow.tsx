@@ -274,6 +274,7 @@ function FlowInner({
 interface Props {
   props: unknown;
   onReady?: () => void;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 export default function ConceptMapFlow({ props, onReady }: Props) {

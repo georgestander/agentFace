@@ -6,6 +6,7 @@ import type { TypographyDisplayProps } from "../definitions/typography-display";
 interface Props {
   props: unknown;
   onReady?: () => void;
+  onInteractionLockChange?: (locked: boolean) => void;
 }
 
 const fontMap: Record<string, string> = {
