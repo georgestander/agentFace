@@ -3,3 +3,6 @@ dist/
 .wrangler/
 .dev.vars
 *.log
+
+# Local planning logs (keep local, do not publish)
+docs/log.ndjson
