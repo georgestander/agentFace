@@ -1,89 +1,133 @@
-# Agent Face — Phase 1
+# Agent Face
 
-An AI agent that represents George through conversation and dynamically renders UI components.
+A concept-led portfolio where an agent presents ideas one step at a time.
 
-## Setup
+Instead of a static homepage, the site runs a guided session:
+- the agent reasons briefly,
+- chooses one visual tool,
+- presents a concept,
+- and advances through a deterministic concept sequence.
+
+## Why this exists
+
+This project is built around one core thesis:
+
+> Show up every day and make things that have soul. Things with story, feeling, and a reason to exist.
+
+The site demonstrates that thesis through behavior, not just copy.
+
+## Quick start
 
 ```bash
-cd agent-face
-pnpm install    # or npm install
-
-# Add your OpenRouter API key to .dev.vars
-# (already created — just replace the placeholder)
-echo "OPENROUTER_API_KEY=sk-or-..." > .dev.vars
-
-# Optional: override model/provider locally
-# Format is "<provider>/<model>"
-# Example: AI_MODEL=openai/gpt-4o
-echo "minimax/minimax-m2.5" >> .dev.vars
-
-# Start dev server
+pnpm install
+cp .dev.vars.example .dev.vars 2>/dev/null || true
+# add OPENROUTER_API_KEY=... to .dev.vars
 pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173)
+Open [http://localhost:5173](http://localhost:5173).
 
-## How it works
-
-1. Visitor lands on a chat interface with starter prompts
-2. Messages POST to `/api/chat` → forwarded to OpenRouter with streaming
-3. Agent responds with mixed text and `json:ui` fenced blocks
-4. Client parses the stream, renders text as chat bubbles and UI blocks as React components
-5. Choice buttons send their value as new user messages
-
-## ASCII face tool
-
-### Zero-command version (recommended)
-
-No setup needed. Open this file in any browser and use it instantly:
-
-```text
-scripts/ascii-face.html
-```
-
-1. Double-click `scripts/ascii-face.html` in Finder/Explorer, **or** in your terminal run: `open scripts/ascii-face.html` (macOS) / `start scripts/ascii-face.html` (Windows) / `xdg-open scripts/ascii-face.html` (Linux)
-2. Drop a photo or use the file picker
-3. Click **Generate ASCII**
-4. Copy or download the result from the UI
-
-No Python, no Node packages, and no virtual environment (`venv`) are required for this version.
-
-Use the local toolkit to convert a photo of your face into ASCII text.
+Build check:
 
 ```bash
-cd /Users/georgestander/dev/personal/site_with_soul/agent-face
-python scripts/ascii-face.py ./path/to/your/face.jpg --width 120
+pnpm build
 ```
 
-Useful options:
+## How to steer the agent with content
 
-- `--width` — character width (columns)
-- `--chars` — character ramp from lightest to darkest (default: ` .:-=+*#%@`)
-- `--invert` — invert lightness-to-character mapping
-- `--scale` — terminal aspect ratio tuning (default: `0.55`)
-- `--output` / `-o` — write to a file instead of stdout
+The easiest way to customize this project is editing markdown in `content/`.
 
-If Pillow is not installed:
+### 1) Concepts (agent path + concept UI)
 
-```bash
-pip install Pillow
+File: `content/concepts.md`
+
+- Each `##` heading is one concept bullet shown in UI.
+- `- id:` is the stable runtime key.
+- `- themes:` helps the agent decide tool/style.
+- Paragraph text becomes concept elaboration in the system prompt.
+
+Minimal concept section:
+
+```md
+## find the reason for things to exist
+- id: reason-to-exist
+- themes: philosophy, purpose, first-principles
+
+Why this concept matters, in plain language.
 ```
 
-## Environment
+### 2) Agent layer instructions (system steering)
 
-- `OPENROUTER_API_KEY` — required. For local dev, set in `.dev.vars`. For production, use `npx wrangler secret put OPENROUTER_API_KEY`.
-- `AI_MODEL` — optional, defaults to `anthropic/claude-sonnet-4` (set in `wrangler.jsonc` for deploy).  
-  You can also set a local override in `.dev.vars` (same format): `AI_MODEL=<provider>/<model>`.
+File: `content/agent-instructions.md`
 
-## Stack
+This is the editable "agent layer". Put voice, stance, guardrails, and thesis guidance here.
 
-- **RedwoodSDK** — React on Cloudflare Workers (SSR + RSC)
-- **OpenRouter** — model-agnostic AI API
-- **Zod** — runtime validation of agent UI output
-- **Tailwind CSS** — styling (CDN for Phase 1)
+Use this file to control:
+- how the agent frames ideas,
+- what it should prioritize,
+- and how strongly it should reference your thesis.
+
+### 3) Musings (projects + writing)
+
+Directory: `content/musings/*.md`
+
+Each file becomes:
+- a card on `/musings`, and
+- a detail page at `/musings/<slug>`.
+
+Use frontmatter:
+
+```md
+---
+title: WorkspaceOS
+date: 2026-02-17
+type: project
+summary: One-line summary shown on the index.
+---
+
+Longer body copy in markdown.
+```
+
+## Static pages
+
+- `src/app/pages/About.tsx`
+- `src/app/pages/Contact.tsx`
+
+These are intentionally static right now for simple site-level copy.
+
+## Replay and token control
+
+The home/session flow supports replay via `/?replay=1`.
+If a session is cached locally, replay reuses prior generated steps to avoid unnecessary new generation/token spend.
+
+## Project map
+
+- `src/worker.tsx`: route wiring (pages + API endpoints)
+- `src/app/agent/*`: prompt building + OpenRouter/session handlers
+- `src/app/content/*`: markdown parsing + content loading helpers
+- `src/app/pages/*`: route-level React pages
+- `src/app/components/*`: UI primitives and session visuals
+- `content/*`: editable concepts, instructions, and musings
+
+## Smoke test checklist
+
+Run `pnpm dev`, then verify:
+
+1. `/` starts the agent session and streams a concept step.
+2. continue/back controls work and stay visible.
+3. `/conventional`, `/about`, `/contact`, `/musings` render with shared top nav.
+4. `/musings/<slug>` opens detail pages in same layout.
+5. `/?replay=1` restores replay without forcing a fresh full run.
+6. Mobile viewport (e.g. 390x844) is readable and controls are tappable.
 
 ## Deploy
 
 ```bash
-pnpm run release
+pnpm release
+```
+
+For production secrets:
+
+```bash
+wrangler secret put OPENROUTER_API_KEY
 ```
