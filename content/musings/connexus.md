@@ -1,6 +1,6 @@
 ---
 title: Connexus
-date: 2026-02-17
+date: 2024-08-22
 type: project
 summary: Thought is not linear. Connexus explores branching conversations for deeper idea development.
 ---

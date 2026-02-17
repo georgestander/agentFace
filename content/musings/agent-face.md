@@ -1,6 +1,6 @@
 ---
 title: Agent Face
-date: 2026-02-17
+date: 2026-02-11
 type: project
 summary: This site is the portfolio piece itself. The medium demonstrates the message.
 ---

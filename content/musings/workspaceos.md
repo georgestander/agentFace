@@ -1,6 +1,6 @@
 ---
 title: WorkspaceOS
-date: 2026-02-17
+date: 2025-11-09
 type: project
 summary: Agents should have desks, not toolbars. A workspace-first operating model for AI collaboration.
 ---
