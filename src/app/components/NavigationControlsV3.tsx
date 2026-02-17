@@ -18,6 +18,10 @@ import type { IntentSpec, InteractionMode, Placement } from "../runtime/types";
 
 const HOLD_DURATION_MS = 800;
 const HOLD_FALLBACK_MS = 4000;
+const PRIMARY_BUTTON_CLASS =
+  "px-5 py-2.5 text-sm font-mono text-white border border-black rounded-lg cursor-pointer bg-black shadow-[0_8px_18px_rgba(0,0,0,0.28)] hover:-translate-y-[1px] hover:shadow-[0_12px_24px_rgba(0,0,0,0.32)] active:translate-y-0 active:shadow-[0_6px_14px_rgba(0,0,0,0.28)] transition-all duration-200";
+const SECONDARY_BUTTON_CLASS =
+  "px-4 py-2 text-xs font-mono text-white bg-black/95 hover:bg-black border border-black rounded-md shadow-[0_5px_12px_rgba(0,0,0,0.22)] hover:-translate-y-[1px] transition-all duration-200 cursor-pointer";
 
 function HoldButton({
   label,
@@ -70,9 +74,9 @@ function HoldButton({
     return (
       <button
         onClick={onComplete}
-        className="px-5 py-2.5 text-sm font-mono text-ink-muted hover:text-ink border border-stone-300 hover:border-stone-400 rounded-lg transition-colors duration-200 cursor-pointer bg-surface/80 backdrop-blur-sm"
+        className={PRIMARY_BUTTON_CLASS}
       >
-        <span className="mr-1.5 text-xs opacity-60">{icon}</span>
+        <span className="mr-1.5 text-xs opacity-80">{icon}</span>
         {label}
       </button>
     );
@@ -83,16 +87,16 @@ function HoldButton({
       onPointerDown={startHold}
       onPointerUp={endHold}
       onPointerLeave={endHold}
-      className="relative px-5 py-2.5 text-sm font-mono text-ink-muted border border-stone-300 rounded-lg cursor-pointer bg-surface/80 backdrop-blur-sm overflow-hidden select-none touch-none"
+      className={`relative overflow-hidden select-none touch-none ${PRIMARY_BUTTON_CLASS}`}
       aria-label={`Hold to ${label}`}
     >
       {/* Progress fill */}
       <div
-        className="absolute inset-0 bg-accent/10 origin-left transition-none"
+        className="absolute inset-0 bg-white/20 origin-left transition-none"
         style={{ transform: `scaleX(${progress})` }}
       />
       <span className="relative z-10 flex items-center gap-1.5">
-        <span className="text-xs opacity-60">{icon}</span>
+        <span className="text-xs opacity-80">{icon}</span>
         <span>hold</span>
       </span>
     </button>
@@ -178,9 +182,9 @@ function ScrollTrigger({
     return (
       <button
         onClick={onComplete}
-        className="px-5 py-2.5 text-sm font-mono text-ink-muted hover:text-ink border border-stone-300 hover:border-stone-400 rounded-lg transition-colors duration-200 cursor-pointer bg-surface/80 backdrop-blur-sm"
+        className={PRIMARY_BUTTON_CLASS}
       >
-        <span className="mr-1.5 text-xs opacity-60">{icon}</span>
+        <span className="mr-1.5 text-xs opacity-80">{icon}</span>
         {label}
       </button>
     );
@@ -188,7 +192,7 @@ function ScrollTrigger({
 
   return (
     <div
-      className="relative px-5 py-2.5 text-sm font-mono text-ink-muted border border-stone-300 rounded-lg bg-surface/80 backdrop-blur-sm overflow-hidden"
+      className={`relative overflow-hidden ${PRIMARY_BUTTON_CLASS}`}
       role="progressbar"
       aria-valuenow={Math.round(progress * 100)}
       aria-valuemin={0}
@@ -196,11 +200,11 @@ function ScrollTrigger({
       aria-label={`Scroll to ${label}`}
     >
       <div
-        className="absolute inset-0 bg-accent/10 origin-left transition-none"
+        className="absolute inset-0 bg-white/20 origin-left transition-none"
         style={{ transform: `scaleX(${progress})` }}
       />
       <span className="relative z-10 flex items-center gap-1.5">
-        <span className="text-xs opacity-60">{icon}</span>
+        <span className="text-xs opacity-80">{icon}</span>
         <span className="hidden sm:inline">scroll {"\u2193"}</span>
         <span className="sm:hidden">swipe {"\u2193"}</span>
       </span>
@@ -234,9 +238,9 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className="px-5 py-2.5 text-sm font-mono text-ink-muted hover:text-ink border border-stone-300 hover:border-stone-400 rounded-lg transition-colors duration-200 cursor-pointer bg-surface/80 backdrop-blur-sm"
+      className={PRIMARY_BUTTON_CLASS}
     >
-      <span className="mr-1.5 text-xs opacity-60">{icon}</span>
+      <span className="mr-1.5 text-xs opacity-80">{icon}</span>
       {label}
     </button>
   );
@@ -308,9 +312,6 @@ export default function NavigationControlsV3({
 
   const placement = isBrowsing ? "bottom-center" : intentSpec.placement;
 
-  const secondaryClass =
-    "px-4 py-2 text-xs font-mono text-ink-faint hover:text-ink-muted transition-colors duration-200 cursor-pointer";
-
   // Render primary action based on interaction mode
   let primaryButton: React.ReactNode;
   switch (useIntentMode) {
@@ -334,7 +335,7 @@ export default function NavigationControlsV3({
     <div className={`${PLACEMENT_CLASSES[placement]} flex items-center gap-3`}>
       {/* Back button */}
       {canGoBack && (phase === "awaiting" || isBrowsing) && (
-        <button onClick={onGoBack} className={secondaryClass}>
+        <button onClick={onGoBack} className={SECONDARY_BUTTON_CLASS}>
           &larr; back
         </button>
       )}
@@ -345,7 +346,7 @@ export default function NavigationControlsV3({
       {useIntentMode !== "click" && (
         <button
           onClick={primaryAction}
-          className="sr-only focus:not-sr-only focus:px-3 focus:py-1.5 focus:text-xs focus:font-mono focus:text-ink-muted focus:border focus:border-stone-300 focus:rounded"
+          className="sr-only focus:not-sr-only focus:px-3 focus:py-1.5 focus:text-xs focus:font-mono focus:text-white focus:bg-black focus:border focus:border-black focus:rounded"
           aria-label={primaryLabel}
         >
           {primaryLabel}
