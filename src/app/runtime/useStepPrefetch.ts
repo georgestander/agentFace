@@ -96,6 +96,7 @@ export function useStepPrefetch(config: PrefetchConfig): void {
         let reasoning = "";
         let receivedPacket: StepPacket | null = null;
         let receivedUsage: TokenUsage | null = null;
+        let currentEvent = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -107,7 +108,6 @@ export function useStepPrefetch(config: PrefetchConfig): void {
           const lines = buffer.split("\n");
           buffer = lines.pop() || "";
 
-          let currentEvent = "";
           for (const line of lines) {
             const trimmed = line.trim();
             if (trimmed.startsWith("event: ")) {

@@ -291,6 +291,7 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
       let reasoning = "";
       let receivedPacket: StepPacket | null = null;
       let receivedUsage: TokenUsage | null = null;
+      let currentEvent = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -301,7 +302,6 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
-        let currentEvent = "";
         for (const line of lines) {
           const trimmed = line.trim();
           if (trimmed.startsWith("event: ")) {

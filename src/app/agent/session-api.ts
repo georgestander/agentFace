@@ -276,10 +276,13 @@ export async function sessionStepHandler({ request }: { request: Request }) {
           try {
             toolProps = JSON.parse(tc.argumentsJson);
           } catch {
-            // Invalid JSON — emit error
-            write("status", { phase: "error" });
-            write("done", { ok: false });
-            writer.close();
+            console.warn(
+              `[session/step] Invalid tool JSON for ${tc.name}; using fallback packet`,
+              { sessionId, stepIndex }
+            );
+            write("packet", buildFallbackPacket(sessionId, stepIndex, reasoning, tc.id));
+            write("status", { phase: "complete" });
+            write("done", { ok: true });
             return;
           }
 
@@ -301,9 +304,9 @@ export async function sessionStepHandler({ request }: { request: Request }) {
                 `[session/step] Tool ${tc.name} validation failed:`,
                 result.error.issues
               );
-              write("status", { phase: "error" });
-              write("done", { ok: false, error: "Tool output failed validation" });
-              writer.close();
+              write("packet", buildFallbackPacket(sessionId, stepIndex, reasoning, tc.id));
+              write("status", { phase: "complete" });
+              write("done", { ok: true });
               return;
             }
           }
@@ -327,7 +330,11 @@ export async function sessionStepHandler({ request }: { request: Request }) {
 
           write("packet", packet);
         } else {
-          write("status", { phase: "error" });
+          console.warn(
+            "[session/step] Model returned no tool call; using fallback packet",
+            { sessionId, stepIndex }
+          );
+          write("packet", buildFallbackPacket(sessionId, stepIndex, reasoning));
         }
 
         write("status", { phase: "complete" });
@@ -440,4 +447,40 @@ function sseError(message: string): Response {
       "Cache-Control": "no-cache",
     },
   });
+}
+
+function buildFallbackPacket(
+  sessionId: string,
+  stepIndex: number,
+  reasoning: string,
+  originalToolCallId?: string
+): Record<string, unknown> {
+  const concept = CONCEPTS[stepIndex];
+  const normalizedBullet = concept.bullet.trim().replace(/\s+/g, " ");
+  const headline =
+    normalizedBullet.length > 0
+      ? normalizedBullet[0].toUpperCase() + normalizedBullet.slice(1)
+      : "Find the reason for things to exist";
+  const subtext = concept.elaboration.trim().slice(0, 180);
+  const styles = ["serif", "mono", "handwritten"] as const;
+  const style = styles[stepIndex % styles.length];
+
+  return {
+    sessionId,
+    stepIndex,
+    conceptId: concept.id,
+    toolName: "typography_display",
+    toolProps: {
+      headline,
+      subtext,
+      style,
+    },
+    toolCallId: originalToolCallId || `fallback-${sessionId}-${stepIndex}`,
+    thoughtShort: reasoning.slice(0, 120),
+    thoughtFull: reasoning,
+    uiMood: null,
+    intentSpec: null,
+    tokenUsage: null,
+    createdAt: new Date().toISOString(),
+  };
 }

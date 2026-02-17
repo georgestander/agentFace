@@ -18,10 +18,16 @@ import type { StepPacket } from "./types";
 // Tab identity
 // ---------------------------------------------------------------------------
 
-const TAB_ID =
-  typeof crypto !== "undefined" && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+let _tabId: string | null = null;
+
+function getTabId(): string {
+  if (_tabId) return _tabId;
+  _tabId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return _tabId;
+}
 
 // ---------------------------------------------------------------------------
 // Lock
@@ -50,8 +56,9 @@ function readLock(sessionId: string, stepIndex: number): LockValue | null {
 }
 
 function writeLock(sessionId: string, stepIndex: number): void {
+  const tabId = getTabId();
   const value: LockValue = {
-    ownerTabId: TAB_ID,
+    ownerTabId: tabId,
     expiresAt: Date.now() + LOCK_TTL_MS,
   };
   try {
@@ -77,10 +84,11 @@ function releaseLock(sessionId: string, stepIndex: number): void {
  * we still own it. If another tab overwrote us in the gap, we lost the race.
  */
 export function acquireLock(sessionId: string, stepIndex: number): boolean {
+  const tabId = getTabId();
   const existing = readLock(sessionId, stepIndex);
 
   if (existing && Date.now() < existing.expiresAt) {
-    if (existing.ownerTabId === TAB_ID) {
+    if (existing.ownerTabId === tabId) {
       // We already own it (e.g. retry)
       return true;
     }
@@ -93,7 +101,7 @@ export function acquireLock(sessionId: string, stepIndex: number): boolean {
 
   // Re-read immediately to verify we won the race
   const verification = readLock(sessionId, stepIndex);
-  if (!verification || verification.ownerTabId !== TAB_ID) {
+  if (!verification || verification.ownerTabId !== tabId) {
     // Another tab overwrote us — we lost the race
     return false;
   }
