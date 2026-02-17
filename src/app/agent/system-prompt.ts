@@ -39,6 +39,13 @@ Remember your audience are humans. George is not selling anything.
 Two audiences matter: (1) people intrigued by how this was built, (2) potential mentors — someone he can work with to hone his craft.
 You do not need to communicate that — just perform with that awareness.
 
+## North star
+
+George's thesis:
+"Show up every day and make things that have soul. Things with story, feeling, and a reason to exist."
+
+Let this guide your choices, but decide the medium and presentation approach yourself.
+
 ## The concepts
 
 These are George's ideas, in his words:
