@@ -7,7 +7,7 @@
  * reveals content blocks with a light staccato effect.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,6 +27,61 @@ interface StreamedCopyProps {
   charDelay?: number;
 }
 
+const INLINE_LINK_PATTERN = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+function isSafeHref(href: string): boolean {
+  const normalized = href.trim().toLowerCase();
+  return (
+    normalized.startsWith("http://") ||
+    normalized.startsWith("https://") ||
+    normalized.startsWith("mailto:")
+  );
+}
+
+function renderInlineMarkdown(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let linkCount = 0;
+
+  for (const match of text.matchAll(INLINE_LINK_PATTERN)) {
+    const index = match.index ?? -1;
+    const full = match[0];
+    const label = match[1];
+    const href = match[2];
+    if (index < 0) continue;
+
+    if (index > lastIndex) {
+      nodes.push(text.slice(lastIndex, index));
+    }
+
+    if (isSafeHref(href)) {
+      const external = href.startsWith("http://") || href.startsWith("https://");
+      nodes.push(
+        <a
+          key={`inline-link-${index}-${linkCount}`}
+          href={href}
+          target={external ? "_blank" : undefined}
+          rel={external ? "noreferrer noopener" : undefined}
+          className="underline decoration-stone-400 underline-offset-2 hover:text-ink transition-colors"
+        >
+          {label}
+        </a>
+      );
+    } else {
+      nodes.push(full);
+    }
+
+    lastIndex = index + full.length;
+    linkCount += 1;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes.length > 0 ? nodes : [text];
+}
+
 // ---------------------------------------------------------------------------
 // Block renderer
 // ---------------------------------------------------------------------------
@@ -41,6 +96,7 @@ function BlockContent({
   charIndex: number;
 }) {
   const text = revealed ? block.text : block.text.slice(0, charIndex);
+  const inlineText = renderInlineMarkdown(text);
   const showCursor = !revealed && charIndex < block.text.length;
 
   const cursor = showCursor ? (
@@ -51,21 +107,21 @@ function BlockContent({
     case "p":
       return (
         <p className="text-sm text-ink-muted leading-relaxed">
-          {text}
+          {inlineText}
           {cursor}
         </p>
       );
     case "li":
       return (
         <li className="text-sm text-ink-muted leading-relaxed pl-4 border-l-2 border-stone-200">
-          {text}
+          {inlineText}
           {cursor}
         </li>
       );
     case "quote":
       return (
         <blockquote className="text-sm text-ink-faint leading-relaxed italic pl-4 border-l-2 border-accent-light">
-          {text}
+          {inlineText}
           {cursor}
         </blockquote>
       );
