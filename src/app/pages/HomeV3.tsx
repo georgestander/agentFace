@@ -147,7 +147,7 @@ function HomeV3Active() {
 
       {/* Token telemetry badge */}
       {tokenLedger.totals.totalTokens > 0 && (
-        <div className="fixed bottom-2 right-4 z-10 font-mono text-[10px] text-ink-faint opacity-60">
+        <div className="hidden sm:block fixed bottom-2 right-4 z-10 font-mono text-[10px] text-ink-faint opacity-60">
           {tokenLedger.totals.totalTokens.toLocaleString()} tokens
         </div>
       )}

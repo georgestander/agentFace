@@ -7,7 +7,7 @@ interface FooterProps {
 export default function Footer({ visible }: FooterProps) {
   return (
     <footer
-      className={`fixed bottom-4 left-6 z-20 transition-opacity duration-700 ${
+      className={`hidden sm:block fixed bottom-4 left-6 z-20 transition-opacity duration-700 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >

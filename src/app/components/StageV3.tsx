@@ -149,7 +149,7 @@ export default function StageV3({ session }: StageV3Props) {
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       {showPresentation && displayPresentation && (
         <div
-          className={`absolute inset-x-0 top-0 bottom-24 sm:bottom-28 transition-opacity duration-500 ${
+          className={`absolute inset-x-0 top-[6.75rem] bottom-[6.25rem] sm:top-0 sm:bottom-28 transition-opacity duration-500 ${
             isBrowsing || session.phase === "presenting" || session.phase === "awaiting"
               ? "opacity-100"
               : "opacity-0"

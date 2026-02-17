@@ -46,7 +46,7 @@ export default function IntroScreenV3({ onStart }: IntroScreenV3Props) {
         </p>
 
         <div
-          className={`mt-10 flex items-center gap-6 transition-all duration-500 ${
+          className={`mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 transition-all duration-500 ${
             showButtons ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
           }`}
         >

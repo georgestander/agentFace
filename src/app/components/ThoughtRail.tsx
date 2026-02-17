@@ -139,22 +139,30 @@ export default function ThoughtRail({
   model,
 }: ThoughtRailProps) {
   const [showFull, setShowFull] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const desktopScrollRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll when streaming
   useEffect(() => {
-    if (isStreaming && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!isStreaming) return;
+    if (desktopScrollRef.current) {
+      desktopScrollRef.current.scrollTop = desktopScrollRef.current.scrollHeight;
     }
-  }, [text, isStreaming]);
+    if (mobileScrollRef.current) {
+      mobileScrollRef.current.scrollTop = mobileScrollRef.current.scrollHeight;
+    }
+  }, [text, isStreaming, mobileOpen]);
 
   // Reset expand state when step changes
   useEffect(() => {
     setShowFull(false);
+    setMobileOpen(false);
   }, [style]);
 
-  const displayText = showFull ? text : (shortText || clampShort(text));
-  const hasMore = text.length > (shortText || clampShort(text)).length;
+  const clampedText = shortText || clampShort(text);
+  const displayText = showFull ? text : clampedText;
+  const hasMore = text.length > clampedText.length;
   const StyleRenderer = STYLE_RENDERERS[style] || PulseLineContent;
   const thinkingLabelClass = isStreaming ? "text-[#b42318]" : "text-accent";
   const thinkingDotClass = isStreaming ? "bg-[#b42318]" : "bg-accent";
@@ -162,21 +170,79 @@ export default function ThoughtRail({
     ? "font-mono text-[9px] tabular-nums text-[#b42318]/85 animate-pulse motion-reduce:animate-none"
     : "font-mono text-[9px] tabular-nums text-ink-faint/50";
   const modelLabel = model || "unknown-model";
+  const showMobileTrigger = expanded || isStreaming || !!text;
+  const mobileButtonLabel = isStreaming ? "thinking" : "thought";
+  const mobilePanelWidth = "w-[43vw] min-w-[9.75rem] max-w-[11.25rem]";
+  const mobilePanelText = showFull ? text : clampedText;
+
+  const mobileRail = showMobileTrigger ? (
+    <div className="sm:hidden fixed top-[4.35rem] right-3 z-30 flex flex-col items-end gap-2">
+      <button
+        type="button"
+        onClick={() => setMobileOpen((open) => !open)}
+        className="rounded-md border border-stone-200 bg-surface/95 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-[0.08em] text-ink-faint backdrop-blur-sm"
+        aria-expanded={mobileOpen}
+        aria-controls="mobile-thought-panel"
+      >
+        <span className={thinkingLabelClass}>{mobileButtonLabel}</span>
+        {stepTokens != null && stepTokens > 0 && (
+          <span className={`ml-1 ${tokenClass}`}>{stepTokens.toLocaleString()}t</span>
+        )}
+        <span className="ml-1 text-ink-faint/60">{mobileOpen ? "−" : "+"}</span>
+      </button>
+
+      {mobileOpen && (
+        <div
+          id="mobile-thought-panel"
+          className={`${mobilePanelWidth} rounded-lg border border-stone-200 bg-surface/95 shadow-sm backdrop-blur-sm overflow-hidden`}
+        >
+          <div className="px-3 py-2 flex items-center justify-between border-b border-stone-100">
+            <div className="flex items-center gap-2">
+              <span className={`font-mono text-[9px] tracking-[0.15em] uppercase ${thinkingLabelClass}`}>
+                {mobileButtonLabel}
+              </span>
+              {isStreaming && (
+                <span className={`inline-block w-1 h-1 rounded-full animate-pulse motion-reduce:animate-none ${thinkingDotClass}`} />
+              )}
+            </div>
+            <span className="font-mono text-[9px] text-ink-faint/55 truncate max-w-[112px]" title={modelLabel}>
+              {modelLabel}
+            </span>
+          </div>
+          <div className="px-3 py-2.5 max-h-36 overflow-y-auto" ref={mobileScrollRef}>
+            <StyleRenderer text={mobilePanelText} isStreaming={isStreaming} />
+          </div>
+          {hasMore && !isStreaming && (
+            <button
+              type="button"
+              onClick={() => setShowFull((p) => !p)}
+              className="w-full px-3 py-1.5 text-[9px] font-mono text-ink-faint/60 hover:text-ink-faint border-t border-stone-100 transition-colors"
+            >
+              {showFull ? "less" : "more"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  ) : null;
 
   // Compact chip (non-reasoning phases)
   if (!expanded && !isStreaming) {
-    if (!text) return null;
+    if (!text) return mobileRail;
     return (
-      <div className="fixed top-4 right-4 z-30 sm:top-4 sm:right-4">
-        <div className="bg-surface/90 backdrop-blur-sm border border-stone-200 rounded px-2.5 py-1.5 max-w-48 cursor-default">
-          <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-ink-faint/60 mb-0.5">
-            trace
-          </p>
-          <p className="font-serif text-[10px] leading-tight text-ink-faint truncate">
-            {shortText || clampShort(text)}
-          </p>
+      <>
+        <div className="hidden sm:block fixed top-4 right-4 z-30">
+          <div className="bg-surface/90 backdrop-blur-sm border border-stone-200 rounded px-2.5 py-1.5 max-w-48 cursor-default">
+            <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-ink-faint/60 mb-0.5">
+              trace
+            </p>
+            <p className="font-serif text-[10px] leading-tight text-ink-faint truncate">
+              {clampedText}
+            </p>
+          </div>
         </div>
-      </div>
+        {mobileRail}
+      </>
     );
   }
 
@@ -210,7 +276,7 @@ export default function ThoughtRail({
 
           {/* Body */}
           <div
-            ref={scrollRef}
+            ref={desktopScrollRef}
             className="px-3 py-2.5 max-h-48 overflow-y-auto"
             role="region"
             aria-live="polite"
@@ -231,34 +297,7 @@ export default function ThoughtRail({
         </div>
       </div>
 
-      {/* Mobile: top drawer */}
-      <div className="sm:hidden fixed top-12 left-3 right-3 z-30">
-        <div className="bg-surface/95 backdrop-blur-sm border border-stone-200 rounded shadow-sm overflow-hidden">
-          <div className="px-3 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`font-mono text-[9px] tracking-[0.15em] uppercase ${thinkingLabelClass}`}>
-                {isStreaming ? "thinking" : "thought"}
-              </span>
-              {isStreaming && (
-                <span className={`inline-block w-1 h-1 rounded-full animate-pulse motion-reduce:animate-none ${thinkingDotClass}`} />
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[9px] text-ink-faint/55 truncate max-w-[110px]" title={modelLabel}>
-                {modelLabel}
-              </span>
-              {stepTokens != null && stepTokens > 0 && (
-                <span className={tokenClass}>
-                  {stepTokens.toLocaleString()}t
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="px-3 pb-2.5 max-h-24 overflow-y-auto">
-            <StyleRenderer text={displayText} isStreaming={isStreaming} />
-          </div>
-        </div>
-      </div>
+      {mobileRail}
     </>
   );
 }

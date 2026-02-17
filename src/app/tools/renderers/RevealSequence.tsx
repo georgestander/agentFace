@@ -65,12 +65,12 @@ export default function RevealSequence({
   const allRevealed = revealedCount >= layers.length;
 
   return (
-    <div className="flex items-center justify-center h-full px-6 sm:px-12 overflow-y-auto">
-      <div className="max-w-xl w-full py-16">
+    <div className="flex items-start sm:items-center justify-center h-full px-4 sm:px-12 overflow-y-auto">
+      <div className="max-w-xl w-full py-6 sm:py-16">
         {/* Title */}
         {title && (
           <div
-            className={`mb-10 transition-all duration-500 ${
+            className={`mb-6 sm:mb-10 transition-all duration-500 ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
             }`}
           >

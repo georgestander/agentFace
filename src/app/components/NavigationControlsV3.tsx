@@ -19,9 +19,9 @@ import type { IntentSpec, InteractionMode, Placement } from "../runtime/types";
 const HOLD_DURATION_MS = 800;
 const HOLD_FALLBACK_MS = 4000;
 const PRIMARY_BUTTON_CLASS =
-  "px-5 py-2.5 text-sm font-mono text-white border border-black rounded-lg cursor-pointer bg-black shadow-[0_8px_18px_rgba(0,0,0,0.28)] hover:-translate-y-[1px] hover:shadow-[0_12px_24px_rgba(0,0,0,0.32)] active:translate-y-0 active:shadow-[0_6px_14px_rgba(0,0,0,0.28)] transition-all duration-200";
+  "px-4 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm font-mono text-white border border-black rounded-lg cursor-pointer bg-black shadow-[0_8px_18px_rgba(0,0,0,0.28)] hover:-translate-y-[1px] hover:shadow-[0_12px_24px_rgba(0,0,0,0.32)] active:translate-y-0 active:shadow-[0_6px_14px_rgba(0,0,0,0.28)] transition-all duration-200";
 const SECONDARY_BUTTON_CLASS =
-  "px-4 py-2 text-xs font-mono text-white bg-black/95 hover:bg-black border border-black rounded-md shadow-[0_5px_12px_rgba(0,0,0,0.22)] hover:-translate-y-[1px] transition-all duration-200 cursor-pointer";
+  "px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-mono text-white bg-black/95 hover:bg-black border border-black rounded-md shadow-[0_5px_12px_rgba(0,0,0,0.22)] hover:-translate-y-[1px] transition-all duration-200 cursor-pointer";
 
 function HoldButton({
   label,
@@ -217,9 +217,9 @@ function ScrollTrigger({
 // ---------------------------------------------------------------------------
 
 const PLACEMENT_CLASSES: Record<Placement, string> = {
-  "bottom-center": "fixed bottom-10 left-1/2 -translate-x-1/2 z-10",
-  "right-rail": "fixed bottom-10 right-6 z-10",
-  "inline-anchor": "fixed bottom-10 left-1/2 -translate-x-1/2 z-10",
+  "bottom-center": "fixed bottom-[4.75rem] sm:bottom-10 left-1/2 -translate-x-1/2 z-30",
+  "right-rail": "fixed bottom-[4.75rem] right-3 sm:bottom-10 sm:right-6 z-30",
+  "inline-anchor": "fixed bottom-[4.75rem] sm:bottom-10 left-1/2 -translate-x-1/2 z-30",
 };
 
 // ---------------------------------------------------------------------------
@@ -335,7 +335,7 @@ export default function NavigationControlsV3({
   }
 
   return (
-    <div className={`${PLACEMENT_CLASSES[placement]} flex items-center gap-3`}>
+    <div className={`${PLACEMENT_CLASSES[placement]} max-w-[calc(100vw-1.5rem)] flex flex-wrap items-center justify-center gap-2 sm:gap-3`}>
       {/* Back button */}
       {canGoBack && (phase === "awaiting" || isBrowsing) && (
         <button onClick={onGoBack} className={SECONDARY_BUTTON_CLASS}>
