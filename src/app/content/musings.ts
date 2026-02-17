@@ -3,12 +3,18 @@ import { slugify } from "./markdown";
 
 export type MusingType = "project" | "post";
 
+export interface MusingLink {
+  label: string;
+  href: string;
+}
+
 export interface MusingEntry {
   slug: string;
   title: string;
   date: string;
   type: MusingType;
   summary: string;
+  links: MusingLink[];
   body: string;
   blocks: CopyBlock[];
 }
@@ -126,6 +132,38 @@ function parseType(value: string | undefined): MusingType {
   return value === "post" ? "post" : "project";
 }
 
+function isSafeHref(href: string): boolean {
+  const normalized = href.trim().toLowerCase();
+  return (
+    normalized.startsWith("http://") ||
+    normalized.startsWith("https://") ||
+    normalized.startsWith("mailto:")
+  );
+}
+
+function formatLinkLabel(value: string): string {
+  const normalized = value.replace(/[-_]+/g, " ").trim();
+  if (!normalized) return "Link";
+
+  return normalized.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function parseLinks(meta: Record<string, string>): MusingLink[] {
+  const links: MusingLink[] = [];
+
+  for (const [key, value] of Object.entries(meta)) {
+    if (!(key.startsWith("link_") || key.startsWith("link-"))) continue;
+
+    const href = value.trim();
+    if (!isSafeHref(href)) continue;
+
+    const label = formatLinkLabel(key.slice(5));
+    links.push({ label, href });
+  }
+
+  return links;
+}
+
 function inferSlug(path: string): string {
   const match = path.match(/\/([^/]+)\.md$/);
   if (!match) return "musing";
@@ -146,6 +184,7 @@ function parseEntry(path: string, markdown: string): MusingEntry {
   const date = meta.date || "1970-01-01";
   const summary = meta.summary || firstParagraph(blocks) || "No summary provided.";
   const type = parseType(meta.type);
+  const links = parseLinks(meta);
 
   return {
     slug,
@@ -153,6 +192,7 @@ function parseEntry(path: string, markdown: string): MusingEntry {
     date,
     type,
     summary,
+    links,
     body,
     blocks,
   };
@@ -173,4 +213,3 @@ export const MUSINGS: MusingEntry[] = Object.entries(RAW_MUSINGS)
 export function getMusingBySlug(slug: string): MusingEntry | undefined {
   return MUSINGS.find((entry) => entry.slug === slug);
 }
-
