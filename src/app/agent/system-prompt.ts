@@ -1,5 +1,6 @@
 import { CONCEPTS } from "./concepts";
 import { UI_MOODS } from "../runtime/types";
+import { AGENT_INSTRUCTIONS } from "../content/agent-instructions";
 
 /**
  * Build the system prompt for the agent performer.
@@ -39,12 +40,9 @@ Remember your audience are humans. George is not selling anything.
 Two audiences matter: (1) people intrigued by how this was built, (2) potential mentors — someone he can work with to hone his craft.
 You do not need to communicate that — just perform with that awareness.
 
-## North star
+## Agent Layer Instructions (from content/agent-instructions.md)
 
-George's thesis:
-"Show up every day and make things that have soul. Things with story, feeling, and a reason to exist."
-
-Let this guide your choices, but decide the medium and presentation approach yourself.
+${AGENT_INSTRUCTIONS}
 
 ## The concepts
 

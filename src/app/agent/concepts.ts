@@ -1,3 +1,11 @@
+import conceptsMarkdown from "../../../content/concepts.md?raw";
+import {
+  parseCsv,
+  parseH2Sections,
+  parseSectionMeta,
+  slugify,
+} from "@/app/content/markdown";
+
 export interface Concept {
   /** Short identifier for internal tracking */
   id: string;
@@ -9,54 +17,36 @@ export interface Concept {
   themes: string[];
 }
 
-export const CONCEPTS: Concept[] = [
-  {
-    id: "reason-to-exist",
-    bullet: "find the reason for things to exist",
-    elaboration:
-      "George starts every project by asking why it should exist at all. Not what it does — why it matters. If the reason isn't clear, the thing shouldn't be built. This is the filter everything passes through.",
-    themes: ["philosophy", "purpose", "first-principles"],
-  },
-  {
-    id: "what-it-needs-to-do",
-    bullet: "know what it needs to do",
-    elaboration:
-      "Once something has a reason to exist, the next question is: what does it actually need to do? Not features. Not specs. The core job — the thing that, if it doesn't do it, nothing else matters.",
-    themes: ["clarity", "function", "essentialism"],
-  },
-  {
-    id: "interfaces-as-conversations",
-    bullet: "the best interface is a conversation",
-    elaboration:
-      "Dashboards are artifacts of limited input methods. When AI can understand intent, the interface becomes a dialogue, not a grid of widgets. This shapes everything George builds.",
-    themes: ["interfaces", "ai", "design"],
-  },
-  {
-    id: "agents-as-colleagues",
-    bullet: "agents should have desks, not toolbars",
-    elaboration:
-      "WorkspaceOS came from the idea that AI agents are colleagues, not features. They need their own space to work in — not a sidebar bolted onto human tools.",
-    themes: ["workspaceos", "architecture", "vision"],
-  },
-  {
-    id: "thought-branches",
-    bullet: "thought is not linear, why is chat?",
-    elaboration:
-      "Connexus exists because George kept losing threads in long AI conversations. Thought branches. Chat should too.",
-    themes: ["connexus", "ux", "nonlinear"],
-  },
-  {
-    id: "one-person-enterprise",
-    bullet: "one person can build enterprise",
-    elaboration:
-      "The clinical trial budgeting engine — global labor benchmarks, regional modifiers, built by one engineer. Proof that one thoughtful builder can replace a team with spreadsheets.",
-    themes: ["enterprise", "craft", "scale"],
-  },
-  {
-    id: "site-as-portfolio",
-    bullet: "this site is the portfolio piece",
-    elaboration:
-      "Agent Face itself. The medium is the message. A portfolio that demonstrates the ideas instead of describing them. You're watching it right now.",
-    themes: ["meta", "demonstration", "recursion"],
-  },
-];
+function parseConcepts(markdown: string): Concept[] {
+  const sections = parseH2Sections(markdown);
+
+  const concepts = sections
+    .map((section): Concept | null => {
+      const bullet = section.heading.trim();
+      if (!bullet) return null;
+
+      const { meta, content } = parseSectionMeta(section.body);
+      const id = meta.id ? slugify(meta.id) : slugify(bullet);
+      const themes = parseCsv(meta.themes);
+
+      if (!id || !content) return null;
+
+      return {
+        id,
+        bullet,
+        elaboration: content.replace(/\s+/g, " ").trim(),
+        themes: themes.length > 0 ? themes : ["concept"],
+      };
+    })
+    .filter((concept): concept is Concept => concept !== null);
+
+  if (concepts.length === 0) {
+    throw new Error(
+      "No concepts parsed from content/concepts.md. Add at least one `##` concept section."
+    );
+  }
+
+  return concepts;
+}
+
+export const CONCEPTS: Concept[] = parseConcepts(conceptsMarkdown);

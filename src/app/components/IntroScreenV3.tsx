@@ -10,7 +10,7 @@
 import { useEffect, useState } from "react";
 
 const INTRO_TEXT =
-  "I'm George's agent. Show up every day and make things that have soul. Things with story, feeling, and a reason to exist. I'll reason about each idea, then present it however I see fit.";
+  "I'm George's agent. I'll reason about each idea, then present it in the medium that fits.";
 
 const CHAR_DELAY_MS = 30;
 const BUTTON_DELAY_MS = 400;
