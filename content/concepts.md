@@ -27,23 +27,7 @@ Once something has a reason to exist, the next question is: what does it actuall
 
 Dashboards are artifacts of limited input methods. When AI can understand intent, the interface becomes a dialogue, not a grid of widgets. This shapes everything George builds.
 
-## agents should have desks, not toolbars
-- id: agents-as-colleagues
-- themes: workspaceos, architecture, vision
 
-WorkspaceOS came from the idea that AI agents are colleagues, not features. They need their own space to work in - not a sidebar bolted onto human tools.
-
-## thought is not linear, why is chat?
-- id: thought-branches
-- themes: connexus, ux, nonlinear
-
-Connexus exists because George kept losing threads in long AI conversations. Thought branches. Chat should too.
-
-## one person can build enterprise
-- id: one-person-enterprise
-- themes: enterprise, craft, scale
-
-The clinical trial budgeting engine - global labor benchmarks, regional modifiers, built by one engineer. Proof that one thoughtful builder can replace a team with spreadsheets.
 
 ## this site is the portfolio piece
 - id: site-as-portfolio
