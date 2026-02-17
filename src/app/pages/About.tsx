@@ -1,6 +1,6 @@
 "use client";
 
-import AppShell from "../components/AppShell";
+import StaticPageLayout from "../components/StaticPageLayout";
 import StreamedCopy from "../components/StreamedCopy";
 
 const ABOUT_BLOCKS = [
@@ -11,10 +11,8 @@ const ABOUT_BLOCKS = [
 
 export default function About() {
   return (
-    <AppShell>
-      <div className="max-w-2xl mx-auto px-6 py-16 pt-20">
-        <StreamedCopy heading="About" blocks={ABOUT_BLOCKS} />
-      </div>
-    </AppShell>
+    <StaticPageLayout>
+      <StreamedCopy heading="About" blocks={ABOUT_BLOCKS} />
+    </StaticPageLayout>
   );
 }

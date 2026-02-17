@@ -1,6 +1,6 @@
 "use client";
 
-import AppShell from "../components/AppShell";
+import StaticPageLayout from "../components/StaticPageLayout";
 import StreamedCopy from "../components/StreamedCopy";
 
 const MUSINGS_BLOCKS = [
@@ -11,10 +11,8 @@ const MUSINGS_BLOCKS = [
 
 export default function Musings() {
   return (
-    <AppShell>
-      <div className="max-w-2xl mx-auto px-6 py-16 pt-20">
-        <StreamedCopy heading="Musings" blocks={MUSINGS_BLOCKS} />
-      </div>
-    </AppShell>
+    <StaticPageLayout>
+      <StreamedCopy heading="Musings" blocks={MUSINGS_BLOCKS} />
+    </StaticPageLayout>
   );
 }

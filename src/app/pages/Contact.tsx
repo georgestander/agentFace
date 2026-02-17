@@ -1,6 +1,6 @@
 "use client";
 
-import AppShell from "../components/AppShell";
+import StaticPageLayout from "../components/StaticPageLayout";
 import StreamedCopy from "../components/StreamedCopy";
 
 const CONTACT_BLOCKS = [
@@ -10,10 +10,8 @@ const CONTACT_BLOCKS = [
 
 export default function Contact() {
   return (
-    <AppShell>
-      <div className="max-w-2xl mx-auto px-6 py-16 pt-20">
-        <StreamedCopy heading="Contact" blocks={CONTACT_BLOCKS} />
-      </div>
-    </AppShell>
+    <StaticPageLayout>
+      <StreamedCopy heading="Contact" blocks={CONTACT_BLOCKS} />
+    </StaticPageLayout>
   );
 }
