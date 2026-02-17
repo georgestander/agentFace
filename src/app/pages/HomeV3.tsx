@@ -14,6 +14,7 @@ import { useTokenLedger } from "../runtime/useTokenLedger";
 import { buildSeed, deriveBackground } from "../runtime/seed";
 import { PROMPT_VERSION, type TokenUsage } from "../runtime/types";
 import { getSnapshot } from "../runtime/thread-store";
+import { loadActiveSession, loadSession } from "../runtime/session-store";
 import { CONCEPTS } from "../agent/concepts";
 import StageV3 from "../components/StageV3";
 import ConceptBoxV3 from "../components/ConceptBoxV3";
@@ -23,6 +24,28 @@ import AppShell from "../components/AppShell";
 
 export default function HomeV3() {
   const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (started) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const replayRequested = params.get("replay") === "1";
+    if (!replayRequested) return;
+
+    const activeRef = loadActiveSession();
+    if (!activeRef) return;
+
+    const persisted = loadSession(
+      activeRef.sessionId,
+      activeRef.model,
+      activeRef.promptVersion
+    );
+
+    if (!persisted || Object.keys(persisted.packets).length === 0) return;
+
+    setStarted(true);
+    window.history.replaceState({}, "", "/");
+  }, [started]);
 
   if (!started) {
     return (

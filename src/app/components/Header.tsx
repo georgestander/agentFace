@@ -12,7 +12,7 @@ export default function Header({ visible }: HeaderProps) {
       }`}
     >
       <a
-        href="/"
+        href="/?replay=1"
         className="text-xs font-mono text-ink-faint hover:text-ink transition-colors tracking-[0.08em] uppercase"
       >
         George Stander
