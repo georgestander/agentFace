@@ -10,4 +10,4 @@ When I was 12, I created a Windows 95 copy design called "Mirrors 95." My art te
 
 Even back then, I dreamed of creating a thinking, sensing computer like HAL or Jarvis. My ideas have always stretched what seemed possible.
 
-This weird little site is inspired by that same childhood wonder, and by the amazing work from the team at Telepath: https://telepath.computer
+This weird little site is inspired by that same childhood wonder, and by the amazing work from the team at [Telepath](https://telepath.computer).
