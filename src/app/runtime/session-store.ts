@@ -24,7 +24,7 @@ import {
 // Persisted shape
 // ---------------------------------------------------------------------------
 
-interface PersistedSession {
+export interface PersistedSession {
   sessionId: string;
   model: string;
   promptVersion: string;

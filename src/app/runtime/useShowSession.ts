@@ -12,7 +12,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { type StepPacket, type TokenUsage, PROMPT_VERSION } from "./types";
+import { type StepPacket, type TokenUsage, type SessionStartResponse, PROMPT_VERSION } from "./types";
 import { CONCEPTS } from "../agent/concepts";
 import {
   loadSession,
@@ -165,7 +165,7 @@ export function useShowSession(): ShowSessionState & ShowSessionActions {
         throw new Error(`Session start failed: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as SessionStartResponse;
       sessionId = data.sessionId;
       model = data.model || "";
       totalConcepts = data.totalConcepts;
